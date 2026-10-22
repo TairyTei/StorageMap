@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "android_app",
+    "desktop_app",
+    "server",
+    "shared",
+    "ui_core"
+]
+resolver = "2"
+exclude = [
+    "target"
+]

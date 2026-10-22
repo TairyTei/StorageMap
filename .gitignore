@@ -1,0 +1,7 @@
+**/target/
+
+# Логи и временные файлы macOS / Windows / IDE
+**/.DS_Store
+**/.idea/
+**/.vscode/
+**/*.rs.bk

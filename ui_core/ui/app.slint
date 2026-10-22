@@ -1,0 +1,564 @@
+// Game of Life - версия "поиграться со Slint".
+// Публичный интерфейс для Rust (cells, cols, rows, generation, running и колбэки) НЕ менялся,
+// так что существующий Rust-код должен работать как раньше.
+// Добавлены только два новых свойства: `speed` и `zoom` (см. комментарии ниже).
+
+// ─────────────────────────────────────────────────────────────
+// 1. struct + global: темы оформления
+// ─────────────────────────────────────────────────────────────
+// `struct` - обычная запись с полями. `global` - синглтон, доступный из любого компонента
+// как Theme.что-то (и из Rust тоже, если сделать export).
+export struct Palette {
+    name: string,
+    bg: color,
+    dead: color,
+    alive: color,
+    alive2: color,
+}
+
+export global Theme {
+    in-out property <int> index: 0;
+
+    property <[Palette]> palettes: [
+        { name: "Янтарь",  bg: #000000, dead: #171717, alive: #ed9632, alive2: #ffd36b },
+        { name: "Неон",    bg: #05010f, dead: #140a2a, alive: #00e5ff, alive2: #ff2bd6 },
+        { name: "Матрица", bg: #000000, dead: #0b160b, alive: #19ff62, alive2: #c8ffd9 },
+        { name: "Закат",   bg: #0a0408, dead: #1c0f17, alive: #ff4d6d, alive2: #ffb347 },
+    ];
+
+    out property <int> count: palettes.length;
+    out property <Palette> current: palettes[index];
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2. enum: какую иконку рисовать у кнопки
+// ─────────────────────────────────────────────────────────────
+enum Glyph { play, pause, step, dice, clear, invert }
+
+// ─────────────────────────────────────────────────────────────
+// 3. Клетка: состояния (states) + анимированные переходы
+// ─────────────────────────────────────────────────────────────
+// Клетка - это тёмная плитка + "капля" цвета сверху.
+// Когда клетка оживает, капля вырастает с лёгким перелётом (ease-out-back),
+// когда умирает - быстро сжимается.
+component Cell inherits Rectangle {
+    in property <bool> lit;
+    in property <color> tint;
+    in property <color> dead-color;
+
+    Rectangle {
+        x: 1px;
+        y: 1px;
+        width: root.width - 2px;
+        height: root.height - 2px;
+        border-radius: self.width * 0.22;
+        background: root.dead-color;
+        animate background { duration: 400ms; }
+    }
+
+    blob := Rectangle {
+        width: 0px;
+        height: 0px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        border-radius: self.width * 0.22;
+        background: root.tint;
+        animate background { duration: 400ms; }
+    }
+
+    // `states` - именованные наборы значений свойств.
+    // `in`/`out` задают, чем анимировать вход в состояние и выход из него.
+    states [
+        alive when root.lit: {
+            blob.width: root.width - 2px;
+            blob.height: root.height - 2px;
+
+            in {
+                animate blob.width { duration: 260ms; easing: ease-out-back; }
+                animate blob.height { duration: 260ms; easing: ease-out-back; }
+            }
+            out {
+                animate blob.width { duration: 160ms; easing: ease-in; }
+                animate blob.height { duration: 160ms; easing: ease-in; }
+            }
+        }
+    ]
+}
+
+// ─────────────────────────────────────────────────────────────
+// 4. Круглая кнопка с иконкой, нарисованной через Path (без картинок)
+// ─────────────────────────────────────────────────────────────
+component RoundButton inherits Rectangle {
+    in property <Glyph> glyph;
+    in property <string> label;
+    in property <bool> primary: false;
+    in property <bool> enabled: true;
+    in property <color> accent: #ed9632;
+    in property <length> size: 52px;
+    callback clicked();
+
+    property <color> fg: root.primary ? #1b1206 : #ffffff;
+
+    width: root.size;
+    height: root.size;
+    border-radius: root.size / 2;
+    background: root.primary ? root.accent : #ffffff1a;
+    opacity: root.enabled ? 1.0 : 0.35;
+    drop-shadow-blur: root.primary ? 16px : 0px;
+    drop-shadow-color: root.accent.with-alpha(0.5);
+    animate opacity { duration: 150ms; }
+
+    // Для TalkBack на Android
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
+
+    // Подсветка при нажатии
+    Rectangle {
+        border-radius: parent.border-radius;
+        background: ta.pressed ? #ffffff40 : #ffffff00;
+        animate background { duration: 120ms; }
+    }
+
+    // Иконка в рамке 22x22. Path - векторный путь в синтаксисе SVG.
+    Rectangle {
+        width: 22px;
+        height: 22px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+
+        // ▶
+        if root.glyph == Glyph.play: Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: 22;
+            viewbox-height: 22;
+            commands: "M 5 2 L 20 11 L 5 20 Z";
+            fill: root.fg;
+        }
+
+        // ❚❚
+        if root.glyph == Glyph.pause: Rectangle {
+            x: 4px; y: 3px; width: 5px; height: 16px;
+            border-radius: 1.5px;
+            background: root.fg;
+        }
+        if root.glyph == Glyph.pause: Rectangle {
+            x: 13px; y: 3px; width: 5px; height: 16px;
+            border-radius: 1.5px;
+            background: root.fg;
+        }
+
+        // ▶|
+        if root.glyph == Glyph.step: Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: 22;
+            viewbox-height: 22;
+            commands: "M 3 3 L 14 11 L 3 19 Z M 16 3 L 19 3 L 19 19 L 16 19 Z";
+            fill: root.fg;
+        }
+
+        // 🎲 кубик с тремя точками
+        if root.glyph == Glyph.dice: Rectangle {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            border-width: 2px;
+            border-color: root.fg;
+        }
+        if root.glyph == Glyph.dice: Rectangle {
+            x: 5px; y: 5px; width: 4px; height: 4px; border-radius: 2px; background: root.fg;
+        }
+        if root.glyph == Glyph.dice: Rectangle {
+            x: 9px; y: 9px; width: 4px; height: 4px; border-radius: 2px; background: root.fg;
+        }
+        if root.glyph == Glyph.dice: Rectangle {
+            x: 13px; y: 13px; width: 4px; height: 4px; border-radius: 2px; background: root.fg;
+        }
+
+        // ✕
+        if root.glyph == Glyph.clear: Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: 22;
+            viewbox-height: 22;
+            commands: "M 4 4 L 18 18 M 18 4 L 4 18";
+            stroke: root.fg;
+            stroke-width: 2.5px;
+            stroke-line-cap: round;
+        }
+
+        // ◐ инвертировать
+        if root.glyph == Glyph.invert: Rectangle {
+            width: 100%;
+            height: 100%;
+            border-radius: 11px;
+            border-width: 2px;
+            border-color: root.fg;
+        }
+        if root.glyph == Glyph.invert: Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: 22;
+            viewbox-height: 22;
+            commands: "M 11 2 A 9 9 0 0 0 11 20 Z";
+            fill: root.fg;
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5. Свой слайдер на TouchArea (без std-widgets, в цвет темы)
+// ─────────────────────────────────────────────────────────────
+component FancySlider inherits Rectangle {
+    in-out property <float> value;
+    in property <float> minimum: 0;
+    in property <float> maximum: 1;
+    in property <color> accent: #ed9632;
+
+    height: 36px;
+
+    property <length> knob: 24px;
+    property <float> ratio: (root.value - root.minimum) / (root.maximum - root.minimum);
+
+    // дорожка
+    Rectangle {
+        x: root.knob / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.width - root.knob;
+        height: 6px;
+        border-radius: 3px;
+        background: #ffffff26;
+    }
+    // заполненная часть
+    Rectangle {
+        x: root.knob / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.ratio * (root.width - root.knob);
+        height: 6px;
+        border-radius: 3px;
+        background: root.accent;
+    }
+    // ореол вокруг ручки, виден пока палец на слайдере
+    Rectangle {
+        width: 40px;
+        height: 40px;
+        x: root.ratio * (root.width - root.knob) + (root.knob - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        border-radius: 20px;
+        background: root.accent.with-alpha(0.3);
+        opacity: ta.pressed ? 1.0 : 0.0;
+        animate opacity { duration: 150ms; }
+    }
+    // ручка
+    Rectangle {
+        width: root.knob;
+        height: root.knob;
+        x: root.ratio * (root.width - root.knob);
+        y: (parent.height - self.height) / 2;
+        border-radius: root.knob / 2;
+        background: #ffffff;
+        drop-shadow-blur: 6px;
+        drop-shadow-color: #00000080;
+    }
+
+    ta := TouchArea {
+        // `function` внутри элемента - маленький помощник
+        function update() {
+            root.value = root.minimum
+                + clamp((self.mouse-x - root.knob / 2) / (root.width - root.knob), 0, 1)
+                * (root.maximum - root.minimum);
+        }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { self.update(); }
+        }
+        moved => { self.update(); }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. Главное окно
+// ─────────────────────────────────────────────────────────────
+export component MainWindow inherits Window {
+    title: "Game of Life";
+    background: #000000;
+
+    // --- Интерфейс с Rust (без изменений) ---
+    in property <[bool]> cells;
+    in property <int> cols;
+    in property <int> rows;
+    in property <int> generation;
+    in-out property <bool> running: false;
+
+    callback toggle-cell(int);
+    callback step();
+    callback randomize();
+    callback toggle-all();
+    callback clear();
+
+    // --- Новое ---
+    // Rust пока их не использует. `speed` - шагов в секунду (читай в Rust через ui.get_speed()
+    // и меняй период таймера), `zoom` - размер клетки в px, работает полностью внутри UI.
+    in-out property <float> speed: 6;
+    in-out property <float> zoom: 16;
+
+    property <length> cell-size: root.zoom * 1px;
+
+    // Акцентный цвет с анимацией: при смене темы плавно перетекает из старого в новый.
+    // Градиенты сами анимировать нельзя, но можно анимировать цвета, из которых они собраны.
+    property <color> glow: Theme.current.alive;
+    animate glow { duration: 500ms; easing: ease-in-out; }
+
+    // Фон: сплошной цвет темы + радиальное свечение акцента
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: Theme.current.bg;
+        animate background { duration: 500ms; }
+    }
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: @radial-gradient(circle, root.glow.with-alpha(0.22) 0%, root.glow.with-alpha(0) 70%);
+    }
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 14px;
+        alignment: start;
+
+        // ── Шапка: счётчик, индикатор работы, переключатель темы ──
+        HorizontalLayout {
+            spacing: 12px;
+
+            VerticalLayout {
+                Text {
+                    text: "ПОКОЛЕНИЕ";
+                    color: #ffffff80;
+                    font-size: 11px;
+                }
+                Text {
+                    text: "" + root.generation;
+                    color: white;
+                    font-size: 34px;
+                    font-weight: 700;
+                }
+            }
+
+            // Пульсирующая точка. animation-tick() заставляет перерисовывать каждый кадр,
+            // но только пока running = true: в остальное время выражение его не читает.
+            Rectangle {
+                width: 20px;
+                Rectangle {
+                    width: 12px;
+                    height: 12px;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 6px;
+                    background: root.running ? root.glow : #ffffff30;
+                    opacity: root.running ? 0.55 + 0.45 * Math.sin(animation-tick() / 1.2s * 1turn) : 1.0;
+                }
+            }
+
+            Rectangle { horizontal-stretch: 1; }
+
+            // Чип-переключатель темы
+            Rectangle {
+                width: 120px;
+                height: 32px;
+                border-radius: 16px;
+                background: #ffffff14;
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 8px;
+
+                    Rectangle {
+                        width: 14px;
+                        Rectangle {
+                            width: 14px;
+                            height: 14px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: 7px;
+                            background: @linear-gradient(135deg, Theme.current.alive 0%, Theme.current.alive2 100%);
+                        }
+                    }
+                    Text {
+                        text: Theme.current.name;
+                        color: white;
+                        font-size: 13px;
+                        vertical-alignment: center;
+                    }
+                }
+
+                TouchArea {
+                    clicked => {
+                        Theme.index = Theme.index >= Theme.count - 1 ? 0 : Theme.index + 1;
+                    }
+                }
+            }
+        }
+
+        // ── Поле ──
+        HorizontalLayout {
+            alignment: center;
+
+            Rectangle {
+                width: root.cols * root.cell-size;
+                height: root.rows * root.cell-size;
+                border-radius: 6px;
+                // Свечение вокруг живых клеток (тень строится по отрисованному содержимому).
+                // Если на слабом телефоне будут тормоза - первым делом убери эти две строки.
+                drop-shadow-blur: 24px;
+                drop-shadow-color: root.glow.with-alpha(0.35);
+
+                for is-alive[i] in root.cells: Cell {
+                    x: Math.mod(i, root.cols) * root.cell-size;
+                    y: Math.floor(i / root.cols) * root.cell-size;
+                    width: root.cell-size;
+                    height: root.cell-size;
+
+                    lit: is-alive;
+                    dead-color: Theme.current.dead;
+                    // Цвет живой клетки - точка на диагональном градиенте alive -> alive2
+                    tint: Theme.current.alive.mix(
+                        Theme.current.alive2,
+                        (Math.mod(i, root.cols) + Math.floor(i / root.cols)) / (root.cols + root.rows)
+                    );
+                }
+
+                // Один TouchArea на всё поле вместо сотен по одному на клетку.
+                // Нажал - переключил клетку и запомнил, что рисуем (оживляем или убиваем).
+                // Повёл пальцем - остальные клетки подтягиваются к тому же состоянию.
+                TouchArea {
+                    property <int> last: -1;
+                    property <bool> paint: true;
+
+                    property <int> cell-col: Math.floor(self.mouse-x / root.cell-size);
+                    property <int> cell-row: Math.floor(self.mouse-y / root.cell-size);
+                    property <int> idx: (self.cell-col >= 0 && self.cell-col < root.cols && self.cell-row >= 0 && self.cell-row < root.rows)
+                        ? self.cell-row * root.cols + self.cell-col : -1;
+
+                    pointer-event(e) => {
+                        if (e.kind == PointerEventKind.down && self.idx >= 0) {
+                            self.paint = !root.cells[self.idx];
+                            self.last = self.idx;
+                            root.toggle-cell(self.idx);
+                        }
+                        if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
+                            self.last = -1;
+                        }
+                    }
+
+                    moved => {
+                        if (self.idx >= 0 && self.idx != self.last) {
+                            self.last = self.idx;
+                            if (root.cells[self.idx] != self.paint) {
+                                root.toggle-cell(self.idx);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Слайдеры ──
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                text: "Скорость";
+                color: #ffffffb0;
+                font-size: 14px;
+                vertical-alignment: center;
+                width: 76px;
+            }
+            FancySlider {
+                minimum: 1;
+                maximum: 30;
+                value <=> root.speed;
+                accent: root.glow;
+            }
+            Text {
+                text: Math.round(root.speed) + "/с";
+                color: white;
+                font-size: 14px;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+                width: 40px;
+            }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                text: "Зум";
+                color: #ffffffb0;
+                font-size: 14px;
+                vertical-alignment: center;
+                width: 76px;
+            }
+            FancySlider {
+                minimum: 6;
+                maximum: 28;
+                value <=> root.zoom;
+                accent: root.glow;
+            }
+            Text {
+                text: Math.round(root.zoom) + "px";
+                color: white;
+                font-size: 14px;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+                width: 40px;
+            }
+        }
+
+        // ── Кнопки ──
+        HorizontalLayout {
+            spacing: 14px;
+            alignment: center;
+
+            RoundButton {
+                glyph: Glyph.dice;
+                label: "Случайно";
+                accent: root.glow;
+                clicked => { root.randomize(); }
+            }
+            RoundButton {
+                glyph: Glyph.step;
+                label: "Шаг";
+                accent: root.glow;
+                enabled: !root.running;
+                clicked => { root.step(); }
+            }
+            RoundButton {
+                glyph: root.running ? Glyph.pause : Glyph.play;
+                label: root.running ? "Пауза" : "Старт";
+                accent: root.glow;
+                primary: true;
+                size: 64px;
+                // Простую UI-логику можно писать прямо в .slint, без похода в Rust
+                clicked => { root.running = !root.running; }
+            }
+            RoundButton {
+                glyph: Glyph.clear;
+                label: "Очистить";
+                accent: root.glow;
+                clicked => { root.clear(); }
+            }
+            RoundButton {
+                glyph: Glyph.invert;
+                label: "Инвертировать";
+                accent: root.glow;
+                clicked => { root.toggle-all(); }
+            }
+        }
+    }
+}

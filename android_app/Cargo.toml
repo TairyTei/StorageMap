@@ -1,0 +1,15 @@
+[lib]
+crate-type = ["cdylib"]
+
+[package]
+name = "android_app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ui_core = { path = "../ui_core" }
+slint = { version = "1.18.1", features = ["backend-android-activity-06"] }
+
+[package.metadata.android.sdk]
+target_sdk_version = 36
+min_sdk_version = 26
