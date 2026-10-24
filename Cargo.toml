@@ -1,12 +1,17 @@
 [workspace]
-members = [
-    "android_app",
-    "desktop_app",
-    "server",
-    "shared",
-    "ui_core"
-]
 resolver = "2"
-exclude = [
-    "target"
-]
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+wh-core = { path = "crates/wh-core" }
+wh-nav = { path = "crates/wh-nav" }
+wh-layout = { path = "crates/wh-layout" }
+wh-tools = { path = "crates/wh-tools" }
+wh-storage = { path = "crates/wh-storage" }
+gui-core = { path = "crates/gui-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
