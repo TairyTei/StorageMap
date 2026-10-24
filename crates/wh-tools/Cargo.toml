@@ -1,0 +1,8 @@
+[package]
+name = "wh-tools"
+version.workspace = true
+edition.workspace = true
+#build = "build.rs"
+
+[dependencies]
+wh-core.workspace = true

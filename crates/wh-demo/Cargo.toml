@@ -1,0 +1,10 @@
+[package]
+name = "wh-demo"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wh-core.workspace = true
+wh-nav.workspace = true
+wh-layout.workspace = true
+wh-storage.workspace = true

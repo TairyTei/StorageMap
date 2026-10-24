@@ -1,0 +1,7 @@
+[package]
+name = "wh-nav"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wh-core.workspace = true

@@ -1,0 +1,615 @@
+import { CheckBox, ComboBox, LineEdit, ListView } from "std-widgets.slint";
+import { CustomButton } from "custom_button.slint";
+
+export struct ShelfView {
+    commands: string,
+    color: color,
+    label: string,
+    lx: length,
+    ly: length,
+    selected: bool,
+}
+
+export struct LabelView {
+    x: length,
+    y: length,
+    text: string,
+}
+
+export struct ProductView {
+    text: string,
+    selected: bool,
+}
+
+component Layer inherits Path {
+    in property <length> cw;
+    in property <length> ch;
+    width: cw;
+    height: ch;
+    viewbox-width: cw / 1px;
+    viewbox-height: ch / 1px;
+}
+
+export component MainWindow inherits Window {
+
+    property <color> background_color: #242933;
+
+    property <color> CustomButton_color: #373f4f;
+    property <color> CustomButton_active_color: CustomButton_color.brighter(0.7);
+
+    title: "Warehouse Map";
+    preferred-width: 1280px;
+    preferred-height: 800px;
+    min-width: 900px;
+    min-height: 560px;
+    //background: background_color;
+    background: @linear-gradient(180deg,background_color 0%, background_color.darker(0.2) 100%);
+
+    property <bool> dragged: false;
+    property <length> press-x: 0px;
+    property <length> press-y: 0px;
+    property <length> last-x: 0px;
+    property <length> last-y: 0px;
+    property <float> pinch-last: 1.0;
+
+
+    in property <bool> editor-mode: true;
+    in-out property <int> tool: 0;
+    in-out property <int> view-mode: 0;
+    in-out property <bool> ortho: true;
+
+
+
+
+    in property <[string]> preset-names;
+    in property <string> status;
+    in property <string> shelf-info;
+    in property <[ShelfView]> shelves;
+    in property <[LabelView]> labels;
+    in property <[ProductView]> products;
+    in property <string> grid-path: "M 0 0";
+    in property <string> floor-path: "M 0 0";
+    in property <string> draft-path: "M 0 0";
+    in property <string> marker-path: "M 0 0";
+    in property <string> route-path: "M 0 0";
+    in property <string> entrance-path: "M 0 0";
+    in property <bool> preview-active: false;
+    in property <length> preview-from-x;
+    in property <length> preview-from-y;
+    in property <float> px-per-m: 1;
+
+    in-out property <string> new-name;
+    in-out property <string> new-size;
+    in-out property <string> new-demand;
+
+    out property <length> canvas-width: canvas.width;
+    out property <length> canvas-height: canvas.height;
+
+    callback canvas-clicked(length, length);
+    callback tool-selected(int);
+    callback preset-selected(int);
+    callback view-mode-selected(int);
+    callback product-clicked(int);
+    callback search-edited(string);
+    callback close-outline();
+    callback undo-point();
+    callback rotate-shelf();
+    callback delete-shelf();
+    callback toggle-double-sided();
+    callback analyze-clicked();
+    callback place-clicked();
+    callback new-project();
+    callback save-project();
+    callback load-project();
+
+    callback zoom-in();
+    callback zoom-out();
+    callback zoom-at(float, length, length);
+    callback pan-pixels(length, length);
+
+    callback fit-view();
+    callback add-product();
+    callback pin-product();
+    callback unpin-product();
+
+    if root.editor-mode: MenuBar {
+          Menu {
+              title: @tr("Файл");
+
+              MenuItem {
+                  title: @tr("Новый");
+                  shortcut: @keys(Control + N);
+                  activated => { root.new-project() }
+              }
+              MenuItem {
+                  title: @tr("Открыть...");
+                  shortcut: @keys(Control + O);
+                  activated => { root.load-project() }
+              }
+
+              MenuSeparator {}
+
+              MenuItem {
+                  title: @tr("Сохранить");
+                  activated => { root.save-project() }
+              }
+          }
+      }
+    HorizontalLayout {
+        if root.editor-mode: VerticalLayout {
+
+            width: 200px;
+            padding: 8px;
+            spacing: 6px;
+            alignment: start;
+
+            Text {
+                text: "Инструменты";
+                color: #9aa4b8;
+                font-size: 12px;
+            }
+            FlexboxLayout {
+                spacing: 6px;
+
+                CustomButton {
+                    //text: "Выбор";
+                    icon: @image-url("assets/Arrow.png");
+                    width: 30px;
+                    height: 30px;
+                    base-color: CustomButton_color;
+                    accent-color: CustomButton_active_color;
+
+                    primary: root.tool == 0;
+                    clicked => {
+                        root.tool-selected(0);
+                    }
+                }
+                CustomButton {
+                    //text: "Контур склада";
+                    icon: @image-url("assets/Line.png");
+                    width: 30px;
+                    height: 30px;
+                    base-color: #303e5c.darker(0.3);
+                    accent-color: #4a6396.darker(0.3);
+
+                    primary: root.tool == 1;
+                    clicked => {
+                        root.tool-selected(1);
+                    }
+                }
+                CustomButton {
+                    //text: "Стеллаж";
+                    icon: @image-url("assets/Storage.png");
+                    width: 30px;
+                    height: 30px;
+                    base-color: #515c3d.darker(0.3);
+                    accent-color: #77a339.darker(0.3);
+
+                    primary: root.tool == 2;
+                    clicked => {
+                        root.tool-selected(2);
+                    }
+                }
+                CustomButton {
+                    //text: "Вход";
+                    icon: @image-url("assets/Enter.png");
+                    width: 30px;
+                    height: 30px;
+                    base-color: #694d3f.darker(0.3);
+                    accent-color:  #b0653c.darker(0.3);
+
+                    primary: root.tool == 3;
+                    clicked => {
+                        root.tool-selected(3);
+                    }
+                }
+            }
+
+
+            Text {
+                text: "Контур";
+                color: #9aa4b8;
+                font-size: 12px;
+            }
+            CheckBox {
+                text: "Ортогонально";
+                checked <=> root.ortho;
+            }
+            CustomButton {
+                text: "Замкнуть контур";
+                base-color: CustomButton_color;
+                accent-color: CustomButton_active_color;
+
+                clicked => {
+                    root.close-outline();
+                }
+            }
+            CustomButton {
+                text: "Отменить точку";
+
+                base-color: CustomButton_color;
+                accent-color: CustomButton_active_color;
+
+                clicked => {
+                    root.undo-point();
+                }
+            }
+
+            Text {
+                text: "Стеллаж";
+                color: #9aa4b8;
+                font-size: 12px;
+            }
+            ComboBox {
+                model: root.preset-names;
+                current-index: 0;
+                selected(v) => {
+                    root.preset-selected(self.current-index);
+                }
+            }
+            CustomButton {
+                text: "Повернуть на 90°";
+
+                base-color: CustomButton_color;
+                accent-color: CustomButton_active_color;
+
+                clicked => {
+                    root.rotate-shelf();
+                }
+            }
+            CustomButton {
+                text: "Две стороны вкл/выкл";
+
+                base-color: CustomButton_color;
+                accent-color: CustomButton_active_color;
+
+                clicked => {
+                    root.toggle-double-sided();
+                }
+            }
+            CustomButton {
+                text: "Удалить выбранный";
+
+                base-color: CustomButton_color;
+                accent-color: CustomButton_active_color;
+
+                clicked => {
+                    root.delete-shelf();
+                }
+            }
+
+            Text {
+                text: "Расчёт";
+                color: #9aa4b8;
+                font-size: 12px;
+            }
+            CustomButton {
+                text: "Рассчитать доступность";
+
+                base-color: #5f8f47;
+
+                clicked => {
+                    root.analyze-clicked();
+                }
+            }
+            CustomButton {
+                text: "Расспределить товары";
+
+                base-color: #476d8f;
+
+                clicked => {
+                    root.place-clicked();
+                }
+            }
+
+        }
+
+        canvas := Rectangle {
+            horizontal-stretch: 1;
+            background: background_color.darker(0.4);
+            clip: true;
+
+
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: root.grid-path;
+                stroke: background_color.darker(0.2);
+                stroke-width: 1px;
+            }
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: root.floor-path;
+                fill: background_color.darker(0.3);
+                stroke: CustomButton_active_color;
+                stroke-width: 2px;
+            }
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: root.route-path;
+                stroke: #4fc3f7;
+                stroke-width: 3px;
+            }
+
+            for s in root.shelves: Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: s.commands;
+                fill: s.color;
+                stroke: s.selected ? #ffffff : #101014;
+                stroke-width: s.selected ? 2.5px : 1px;
+            }
+
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: root.draft-path;
+                stroke: #ffd54a;
+                stroke-width: 2px;
+            }
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: root.marker-path;
+                fill: #ffd54a;
+            }
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                commands: root.entrance-path;
+                fill: #ff7043;
+                stroke: #ffffff;
+                stroke-width: 1px;
+            }
+
+            for s in root.shelves: Text {
+                x: s.lx - 50px;
+                y: s.ly - 9px;
+                width: 100px;
+                height: 18px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                text: s.label;
+                color: #ffffff;
+                font-size: 11px;
+            }
+            for l in root.labels: Text {
+                x: l.x - 40px;
+                y: l.y - 8px;
+                width: 80px;
+                height: 16px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                text: l.text;
+                color: #9ad1ff;
+                font-size: 10px;
+            }
+
+            Layer {
+                cw: canvas.width;
+                ch: canvas.height;
+                visible: root.preview-active && touch.has-hover && root.view-mode == 0;
+                commands: "M \{root.preview-from-x / 1px} \{root.preview-from-y / 1px} L \{touch.mouse-x / 1px} \{touch.mouse-y / 1px}";
+                stroke: #ffd54a;
+                stroke-width: 1px;
+            }
+            Text {
+                visible: root.preview-active && touch.has-hover && root.view-mode == 0;
+                x: touch.mouse-x + 14px;
+                y: touch.mouse-y + 14px;
+                color: #ffd54a;
+                font-size: 12px;
+                text: "\{Math.round(Math.sqrt(Math.pow((touch.mouse-x - root.preview-from-x) / 1px, 2) + Math.pow((touch.mouse-y - root.preview-from-y) / 1px, 2)) / root.px-per-m * 100) / 100} м";
+            }
+
+            pinch := ScaleRotateGestureHandler {
+                started => {
+                    root.pinch-last = 1.0;
+                    root.dragged = true;
+                }
+                updated => {
+                    if (root.pinch-last > 0.0) {
+                        root.zoom-at(self.scale / root.pinch-last, self.center.x, self.center.y);
+                    }
+                    root.pinch-last = self.scale;
+                    root.last-x = touch.mouse-x;
+                    root.last-y = touch.mouse-y;
+                }
+
+                touch := TouchArea {
+                    clicked => {
+                        if (!root.dragged) {
+                            root.canvas-clicked(self.mouse-x, self.mouse-y);
+                        }
+                    }
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down) {
+                            root.dragged = false;
+                            root.press-x = self.mouse-x;
+                            root.press-y = self.mouse-y;
+                            root.last-x = self.mouse-x;
+                            root.last-y = self.mouse-y;
+                        }
+                    }
+                    moved => {
+                        if (self.pressed && !pinch.active) {
+                            if (!root.dragged && (Math.abs((self.mouse-x - root.press-x) / 1px) > 8 || Math.abs((self.mouse-y - root.press-y) / 1px) > 8)) {
+                                root.dragged = true;
+                            }
+                            if (root.dragged) {
+                                root.pan-pixels(self.mouse-x - root.last-x, self.mouse-y - root.last-y);
+                                root.last-x = self.mouse-x;
+                                root.last-y = self.mouse-y;
+                            }
+                        }
+                    }
+                    scroll-event(event) => {
+                        root.zoom-at(Math.exp(event.delta-y / 1px * 0.002), self.mouse-x, self.mouse-y);
+                        accept
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            width: 320px;
+            padding: 8px;
+            spacing: 6px;
+
+            HorizontalLayout {
+                spacing: 6px;
+                CustomButton {
+                    text: "2D";
+                    height: self.width;
+
+                    base-color: CustomButton_color;
+                    accent-color: CustomButton_active_color;
+
+                    primary: root.view-mode == 0;
+                    clicked => {
+                        root.view-mode-selected(0);
+                    }
+                }
+                CustomButton {
+                    text: "3D";
+                    height: self.width;
+
+                    base-color: CustomButton_color;
+                    accent-color: CustomButton_active_color;
+
+                    primary: root.view-mode == 1;
+                    clicked => {
+                        root.view-mode-selected(1);
+                    }
+                }
+            }
+
+            CustomButton {
+                text: "Вписать";
+
+                base-color: CustomButton_color;
+                accent-color: CustomButton_active_color;
+
+                clicked => {
+                    root.fit-view();
+                }
+            }
+
+            Text {
+                text: root.status;
+                color: #ffd54a;
+                font-size: 12px;
+                wrap: word-wrap;
+            }
+            Text {
+                text: root.shelf-info;
+                color: #e6e6e6;
+                font-size: 12px;
+                wrap: word-wrap;
+            }
+
+            Text {
+                text: "Товары";
+                color: #9aa4b8;
+                font-size: 12px;
+            }
+            LineEdit {
+                placeholder-text: "Поиск по названию или SKU";
+                edited(t) => {
+                    root.search-edited(t);
+                }
+            }
+            ListView {
+                vertical-stretch: 1;
+                for p[i] in root.products: Rectangle {
+                    height: 26px;
+                    background: p.selected ? #2f4b7c : #20232b;
+                    Text {
+                        x: 6px;
+                        width: parent.width - 12px;
+                        height: parent.height;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        text: p.text;
+                        color: #e6e6e6;
+                        font-size: 12px;
+                    }
+                    TouchArea {
+                        clicked => {
+                            root.product-clicked(i);
+                        }
+                    }
+                }
+            }
+
+            if root.editor-mode: VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: "Новый товар";
+                    color: #9aa4b8;
+                    font-size: 12px;
+                    vertical-stretch: 0;
+                    height: self.preferred-height;
+                }
+                LineEdit {
+                    placeholder-text: "Название";
+                    text <=> root.new-name;
+                    vertical-stretch: 0;
+                    height: 35px;
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    LineEdit {
+                        placeholder-text: "Ячеек";
+                        text <=> root.new-size;
+                        horizontal-stretch: 1;
+                        height: 35px;
+                        min-width: 0px;
+                    }
+                    LineEdit {
+                        placeholder-text: "Спрос";
+                        text <=> root.new-demand;
+                        horizontal-stretch: 1;
+                        height: 35px;
+                        min-width: 0px;
+                    }
+                }
+                CustomButton {
+                    text: "Добавить товар";
+
+                    base-color: CustomButton_color;
+                    accent-color: CustomButton_active_color;
+
+                    clicked => {
+                        root.add-product();
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    CustomButton {
+                        text: "Закрепить";
+
+                        base-color: CustomButton_color;
+                        accent-color: CustomButton_active_color;
+
+                        clicked => {
+                            root.pin-product();
+                        }
+                    }
+                    CustomButton {
+                        text: "Открепить";
+
+                        base-color: CustomButton_color;
+                        accent-color: CustomButton_active_color;
+
+                        clicked => {
+                            root.unpin-product();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

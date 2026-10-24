@@ -1,0 +1,72 @@
+export component CustomButton inherits Rectangle {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> primary: false;
+    in property <color> base-color: white.transparentize(0.9);
+    in property <color> accent-color: white.transparentize(0.8);
+    in property <color> icon-color: transparent;
+    in property <length> content-padding: 6px;
+
+    property <color> currentColor;
+
+    callback clicked();
+
+    preferred-width: 28px;
+    height: 28px;
+    horizontal-stretch: 1;
+    border-radius: 3px;
+
+    border-width: 1px;
+    border-color: root.background.darker(0.3);
+
+    currentColor: root.primary ? (touch.has-hover ? root.accent-color.brighter(0.15) : root.accent-color)
+        : touch.has-hover ? root.base-color.brighter(0.2)
+        : root.base-color;
+
+    background: currentColor;
+
+    //animate background { duration: 120ms; }
+
+    drop-shadow-color: touch.pressed ? transparent : #00000080;
+    drop-shadow-blur: 3px;
+    drop-shadow-offset-y: 1px;
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+
+    VerticalLayout {
+        padding: root.content-padding;
+        y: touch.pressed ? 1px : 0px;
+
+        if root.icon.width > 0 : Image {
+            source: root.icon;
+            image-fit: contain;
+            colorize: root.icon-color;
+        }
+        if root.icon.width == 0 : Text {
+            text: root.text;
+            color: white;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+
+    Rectangle {
+        border-radius: root.border-radius;
+        background: @linear-gradient(180deg, white.transparentize(0.9) 0%, white.transparentize(1) 10%, black.transparentize(0.95) 100%);
+
+    }
+
+    Rectangle {
+        x: root.border-radius;
+        y: 1px;
+        width: parent.width - 2 * root.border-radius;
+        height: 1px;
+        background: touch.pressed ? transparent : white.transparentize(0.85);
+    }
+
+
+}

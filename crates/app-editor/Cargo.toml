@@ -1,0 +1,13 @@
+[package]
+name = "app-editor"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "editor"
+path = "src/main.rs"
+
+[dependencies]
+gui-core.workspace = true
+# Полный desktop-бэкенд Slint (winit + рендерер по умолчанию).
+slint = "1"

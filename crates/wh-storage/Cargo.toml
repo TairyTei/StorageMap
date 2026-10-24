@@ -1,0 +1,8 @@
+[package]
+name = "wh-storage"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+wh-core = { workspace = true, features = ["serde"] }
+serde_json.workspace = true

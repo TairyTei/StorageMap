@@ -1,0 +1,811 @@
+{
+  "warehouse": {
+    "id": 1,
+    "name": "Новый склад",
+    "outline": {
+      "points": [
+        {
+          "x": -8.9,
+          "y": 8.3
+        },
+        {
+          "x": 28.6,
+          "y": 8.3
+        },
+        {
+          "x": 28.6,
+          "y": 7.2
+        },
+        {
+          "x": -10.3,
+          "y": 7.2
+        },
+        {
+          "x": -10.3,
+          "y": 5.3
+        },
+        {
+          "x": 18.0,
+          "y": 5.3
+        },
+        {
+          "x": 18.0,
+          "y": 2.2
+        },
+        {
+          "x": -4.4,
+          "y": 2.2
+        },
+        {
+          "x": -4.4,
+          "y": -0.7
+        },
+        {
+          "x": 16.5,
+          "y": -0.7
+        },
+        {
+          "x": 16.5,
+          "y": -8.2
+        },
+        {
+          "x": 22.2,
+          "y": -8.2
+        },
+        {
+          "x": 22.2,
+          "y": 3.8
+        },
+        {
+          "x": 26.9,
+          "y": 3.8
+        },
+        {
+          "x": 26.9,
+          "y": -1.1
+        },
+        {
+          "x": 36.2,
+          "y": -1.1
+        },
+        {
+          "x": 36.2,
+          "y": 5.3
+        },
+        {
+          "x": 31.2,
+          "y": 5.3
+        },
+        {
+          "x": 31.2,
+          "y": 15.8
+        },
+        {
+          "x": 15.3,
+          "y": 15.8
+        },
+        {
+          "x": 15.3,
+          "y": 10.3
+        },
+        {
+          "x": 1.3,
+          "y": 10.3
+        },
+        {
+          "x": 1.3,
+          "y": 27.2
+        },
+        {
+          "x": 2.9,
+          "y": 27.2
+        },
+        {
+          "x": 2.9,
+          "y": 12.1
+        },
+        {
+          "x": 13.4,
+          "y": 12.1
+        },
+        {
+          "x": 13.4,
+          "y": 18.8
+        },
+        {
+          "x": 33.6,
+          "y": 18.8
+        },
+        {
+          "x": 33.6,
+          "y": 7.6
+        },
+        {
+          "x": 39.2,
+          "y": 7.6
+        },
+        {
+          "x": 39.2,
+          "y": -2.6
+        },
+        {
+          "x": 46.5,
+          "y": -2.6
+        },
+        {
+          "x": 46.5,
+          "y": 22.5
+        },
+        {
+          "x": 42.2,
+          "y": 22.5
+        },
+        {
+          "x": 42.2,
+          "y": 10.0
+        },
+        {
+          "x": 36.8,
+          "y": 10.0
+        },
+        {
+          "x": 36.8,
+          "y": 33.1
+        },
+        {
+          "x": 39.8,
+          "y": 33.1
+        },
+        {
+          "x": 39.8,
+          "y": 37.2
+        },
+        {
+          "x": 32.5,
+          "y": 37.2
+        },
+        {
+          "x": 32.5,
+          "y": 21.6
+        },
+        {
+          "x": 7.8,
+          "y": 21.6
+        },
+        {
+          "x": 7.8,
+          "y": 32.1
+        },
+        {
+          "x": -8.5,
+          "y": 32.1
+        },
+        {
+          "x": -8.5,
+          "y": 38.8
+        },
+        {
+          "x": -5.8,
+          "y": 38.8
+        },
+        {
+          "x": -5.8,
+          "y": 33.7
+        },
+        {
+          "x": 9.9,
+          "y": 33.7
+        },
+        {
+          "x": 9.9,
+          "y": 23.1
+        },
+        {
+          "x": 30.9,
+          "y": 23.1
+        },
+        {
+          "x": 30.9,
+          "y": 29.6
+        },
+        {
+          "x": 21.4,
+          "y": 29.6
+        },
+        {
+          "x": 21.4,
+          "y": 26.3
+        },
+        {
+          "x": 18.2,
+          "y": 26.3
+        },
+        {
+          "x": 18.2,
+          "y": 37.1
+        },
+        {
+          "x": 21.9,
+          "y": 37.1
+        },
+        {
+          "x": 21.9,
+          "y": 33.1
+        },
+        {
+          "x": 29.3,
+          "y": 33.1
+        },
+        {
+          "x": 29.3,
+          "y": 40.1
+        },
+        {
+          "x": 12.7,
+          "y": 40.1
+        },
+        {
+          "x": 12.7,
+          "y": 35.5
+        },
+        {
+          "x": 5.4,
+          "y": 35.5
+        },
+        {
+          "x": -3.2,
+          "y": 35.5
+        },
+        {
+          "x": -3.2,
+          "y": 42.0
+        },
+        {
+          "x": -11.5,
+          "y": 42.0
+        },
+        {
+          "x": -11.5,
+          "y": 25.0
+        },
+        {
+          "x": -8.8,
+          "y": 25.0
+        }
+      ]
+    },
+    "entrance": {
+      "x": -8.439145009478246,
+      "y": 8.493939881693253
+    },
+    "shelves": [
+      {
+        "id": 1,
+        "label": "S1",
+        "footprint": {
+          "center": {
+            "x": 42.5,
+            "y": -1.4
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 0.0
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 2,
+        "label": "S2",
+        "footprint": {
+          "center": {
+            "x": 37.8,
+            "y": 8.2
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 0.0
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 3,
+        "label": "S3",
+        "footprint": {
+          "center": {
+            "x": 35.1,
+            "y": 8.1
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 0.0
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 4,
+        "label": "S4",
+        "footprint": {
+          "center": {
+            "x": 45.9,
+            "y": 19.4
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 5,
+        "label": "S5",
+        "footprint": {
+          "center": {
+            "x": 45.7,
+            "y": 16.1
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 6,
+        "label": "S6",
+        "footprint": {
+          "center": {
+            "x": 45.9,
+            "y": 12.5
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 7,
+        "label": "S7",
+        "footprint": {
+          "center": {
+            "x": 45.9,
+            "y": 8.8
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 8,
+        "label": "S8",
+        "footprint": {
+          "center": {
+            "x": 45.9,
+            "y": 5.0
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 9,
+        "label": "S9",
+        "footprint": {
+          "center": {
+            "x": 46.0,
+            "y": 1.8
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 10,
+        "label": "S10",
+        "footprint": {
+          "center": {
+            "x": 35.9,
+            "y": 11.2
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 11,
+        "label": "S11",
+        "footprint": {
+          "center": {
+            "x": 39.2,
+            "y": 35.1
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 12,
+        "label": "S12",
+        "footprint": {
+          "center": {
+            "x": 30.4,
+            "y": 28.5
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 13,
+        "label": "S13",
+        "footprint": {
+          "center": {
+            "x": 30.2,
+            "y": 24.6
+          },
+          "half_w": 1.0,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 4
+      },
+      {
+        "id": 14,
+        "label": "S14",
+        "footprint": {
+          "center": {
+            "x": 15.8,
+            "y": 12.6
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 4.71238898038469
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 15,
+        "label": "S15",
+        "footprint": {
+          "center": {
+            "x": 30.3,
+            "y": 12.3
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 16,
+        "label": "S16",
+        "footprint": {
+          "center": {
+            "x": 35.4,
+            "y": 3.4
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 17,
+        "label": "S17",
+        "footprint": {
+          "center": {
+            "x": 21.5,
+            "y": 0.5
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 18,
+        "label": "S18",
+        "footprint": {
+          "center": {
+            "x": 21.4,
+            "y": -6.5
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 19,
+        "label": "S19",
+        "footprint": {
+          "center": {
+            "x": 21.3,
+            "y": -2.7
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 20,
+        "label": "S20",
+        "footprint": {
+          "center": {
+            "x": 30.2,
+            "y": 7.7
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 21,
+        "label": "S21",
+        "footprint": {
+          "center": {
+            "x": 23.8,
+            "y": 10.1
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 22,
+        "label": "S22",
+        "footprint": {
+          "center": {
+            "x": 26.8,
+            "y": 12.0
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 23,
+        "label": "S23",
+        "footprint": {
+          "center": {
+            "x": 4.5,
+            "y": 19.4
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 24,
+        "label": "S24",
+        "footprint": {
+          "center": {
+            "x": 6.1,
+            "y": 23.8
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 25,
+        "label": "S25",
+        "footprint": {
+          "center": {
+            "x": 3.9,
+            "y": 27.7
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 26,
+        "label": "S26",
+        "footprint": {
+          "center": {
+            "x": 0.4,
+            "y": 28.0
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 27,
+        "label": "S27",
+        "footprint": {
+          "center": {
+            "x": -7.3,
+            "y": 24.0
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 28,
+        "label": "S28",
+        "footprint": {
+          "center": {
+            "x": -0.5,
+            "y": 23.9
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 29,
+        "label": "S29",
+        "footprint": {
+          "center": {
+            "x": -1.2,
+            "y": 21.7
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 30,
+        "label": "S30",
+        "footprint": {
+          "center": {
+            "x": -5.4,
+            "y": 18.9
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 31,
+        "label": "S31",
+        "footprint": {
+          "center": {
+            "x": -2.4,
+            "y": 17.4
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 32,
+        "label": "S32",
+        "footprint": {
+          "center": {
+            "x": -0.3,
+            "y": 14.8
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 33,
+        "label": "S33",
+        "footprint": {
+          "center": {
+            "x": -7.2,
+            "y": 14.5
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 34,
+        "label": "S34",
+        "footprint": {
+          "center": {
+            "x": -5.2,
+            "y": 11.3
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 35,
+        "label": "S35",
+        "footprint": {
+          "center": {
+            "x": -2.2,
+            "y": 11.4
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 3.141592653589793
+        },
+        "double_sided": false,
+        "capacity": 6
+      }
+    ]
+  },
+  "products": [],
+  "placements": []
+}

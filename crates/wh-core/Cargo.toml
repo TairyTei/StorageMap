@@ -1,0 +1,11 @@
+[package]
+name = "wh-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[features]
+# Включается на сервере и в клиентах, где нужна передача по сети.
+serde = ["dep:serde"]

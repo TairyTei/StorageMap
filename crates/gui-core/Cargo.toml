@@ -1,0 +1,16 @@
+[package]
+name = "gui-core"
+version.workspace = true
+edition.workspace = true
+build = "build.rs"
+
+[dependencies]
+wh-core.workspace = true
+wh-nav.workspace = true
+wh-layout.workspace = true
+wh-storage.workspace = true
+
+slint = { version = "1", default-features = false, features = ["std", "compat-1-2"] }
+
+[build-dependencies]
+slint-build = "1"
