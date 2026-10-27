@@ -1,6 +1,3 @@
-//! Состояние и операции редактора. Никакого UI: только данные и действия над ними,
-//! поэтому всё покрывается обычными unit-тестами.
-
 use std::f64::consts::{FRAC_PI_2, TAU};
 
 use wh_core::{
@@ -9,7 +6,6 @@ use wh_core::{
 };
 use wh_nav::{analyze as analyze_access, NavConfig};
 
-/// Шаг привязки к сетке, м.
 pub const GRID_STEP: f64 = 0.1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,33 +43,53 @@ pub struct ShelfPreset {
 }
 
 pub const PRESETS: [ShelfPreset; 4] = [
-    ShelfPreset { name: "3×1 м (6 яч.)", width: 3.0, depth: 1.0, capacity: 6 },
-    ShelfPreset { name: "2×1 м (4 яч.)", width: 2.0, depth: 1.0, capacity: 4 },
-    ShelfPreset { name: "1.2×0.5 м (2 яч.)", width: 1.2, depth: 0.5, capacity: 2 },
-    ShelfPreset { name: "4×1.5 м (8 яч.)", width: 4.0, depth: 1.5, capacity: 8 },
+    ShelfPreset {
+        name: "3×1 м (6 яч.)",
+        width: 3.0,
+        depth: 1.0,
+        capacity: 6,
+    },
+    ShelfPreset {
+        name: "2×1 м (4 яч.)",
+        width: 2.0,
+        depth: 1.0,
+        capacity: 4,
+    },
+    ShelfPreset {
+        name: "1.2×0.5 м (2 яч.)",
+        width: 1.2,
+        depth: 0.5,
+        capacity: 2,
+    },
+    ShelfPreset {
+        name: "4×1.5 м (8 яч.)",
+        width: 4.0,
+        depth: 1.5,
+        capacity: 8,
+    },
 ];
 
 pub struct EditorState {
     pub warehouse: Warehouse,
     pub products: Vec<Product>,
     pub placements: Vec<Placement>,
-    /// Результат последнего анализа; пусто — анализ устарел или не запускался.
+
     pub access: Vec<ShelfAccess>,
 
     pub tool: Tool,
-    /// Привязка новых вершин контура к горизонтали/вертикали.
+
     pub ortho: bool,
-    /// Идёт рисование контура: вершины лежат в `draft`.
+
     pub drawing: bool,
     pub draft: Vec<Point>,
     pub preset: usize,
-    /// Поворот, с которым будет поставлен следующий стеллаж.
+
     pub pending_angle: f64,
 
     pub selected_shelf: Option<ShelfId>,
     pub selected_product: Option<ProductId>,
     pub status: String,
-    /// Оболочка должна вписать содержимое в окно (после загрузки / замыкания контура).
+
     pub fit_requested: bool,
 }
 
@@ -123,7 +139,6 @@ impl EditorState {
         !self.drawing && self.warehouse.outline.points.len() >= 3
     }
 
-    /// Границы содержимого (для «вписать в окно»).
     pub fn bounds(&self) -> (Point, Point) {
         let pts: &[Point] = if self.drawing && !self.draft.is_empty() {
             &self.draft
@@ -146,15 +161,32 @@ impl EditorState {
         self.tool = tool;
         self.status = match tool {
             Tool::Select => "Выбор: щёлкните по стеллажу".into(),
-            Tool::Outline => "Контур: щёлкайте вершины; клик у первой точки или «Замкнуть» завершает".into(),
-            Tool::Shelf => "Стеллаж: щёлкните по месту установки; «Повернуть» меняет сторону выдачи".into(),
+            Tool::Outline => {
+                "Контур: щёлкайте вершины; клик у первой точки или «Замкнуть» завершает".into()
+            }
+            Tool::Shelf => {
+                "Стеллаж: щёлкните по месту установки; «Повернуть» меняет сторону выдачи".into()
+            }
             Tool::Entrance => "Вход: щёлкните точку входа внутри помещения".into(),
         };
     }
+    pub fn drag(&mut self, dx: f64, dy: f64) -> bool {
+        if let Tool::Select = self.tool {
+            self.on_drag_selected(dx, dy)
+        } else {
+            false
+        }
+    }
+    pub fn on_drag_selected(&mut self, dx: f64, dy: f64) -> bool {
+        match self.selected_shelf {
+            Some(shelfId) => {
+                self.warehouse.move_shelf(shelfId, dx, dy);
 
-    // ───────────── клики по карте ─────────────
-
-    /// Клик по карте. `tol` — допуск «попал в точку» в метрах (зависит от масштаба).
+                true
+            }
+            None => false,
+        }
+    }
     pub fn click(&mut self, world: Point, tol: f64) {
         match self.tool {
             Tool::Select => {
@@ -173,11 +205,12 @@ impl EditorState {
         })
     }
 
-    // ───────────── контур ─────────────
-
     fn outline_click(&mut self, world: Point, tol: f64) {
         let snapped = snap_point(world);
-        if self.drawing && self.draft.len() >= 3 && snapped.distance(self.draft[0]) <= tol.max(GRID_STEP * 1.5) {
+        if self.drawing
+            && self.draft.len() >= 3
+            && snapped.distance(self.draft[0]) <= tol.max(GRID_STEP * 1.5)
+        {
             self.close_outline();
             return;
         }
@@ -203,7 +236,6 @@ impl EditorState {
 
     fn begin_outline(&mut self) {
         if !self.warehouse.outline.points.is_empty() {
-            // Новый контур делает старую расстановку бессмысленной.
             self.warehouse.outline = Polygon::default();
             self.warehouse.shelves.clear();
             self.placements.clear();
@@ -266,11 +298,13 @@ impl EditorState {
         }
     }
 
-    // ───────────── стеллажи ─────────────
-
     fn fits(&self, rect: &OrientedRect, ignore: Option<ShelfId>) -> Result<(), String> {
         let c = rect.corners();
-        let inside = (0..4).all(|i| self.warehouse.outline.contains_segment(c[i], c[(i + 1) % 4]));
+        let inside = (0..4).all(|i| {
+            self.warehouse
+                .outline
+                .contains_segment(c[i], c[(i + 1) % 4])
+        });
         if !inside {
             return Err("Стеллаж выходит за контур".into());
         }
@@ -296,7 +330,15 @@ impl EditorState {
             self.status = msg;
             return;
         }
-        let id = ShelfId(self.warehouse.shelves.iter().map(|s| s.id.0).max().unwrap_or(0) + 1);
+        let id = ShelfId(
+            self.warehouse
+                .shelves
+                .iter()
+                .map(|s| s.id.0)
+                .max()
+                .unwrap_or(0)
+                + 1,
+        );
         self.warehouse
             .shelves
             .push(Shelf::new(id, format!("S{}", id.0), rect, preset.capacity));
@@ -305,11 +347,12 @@ impl EditorState {
         self.status = format!("Стеллаж S{} добавлен", id.0);
     }
 
-    /// Поворот на 90°: выбранного стеллажа (инструмент «Выбор») или следующего устанавливаемого.
     pub fn rotate(&mut self) {
         match (self.tool, self.selected_shelf) {
             (Tool::Select, Some(id)) => {
-                let Some(shelf) = self.warehouse.shelf(id) else { return };
+                let Some(shelf) = self.warehouse.shelf(id) else {
+                    return;
+                };
                 let mut rect = shelf.footprint;
                 rect.angle = normalize_angle(rect.angle + FRAC_PI_2);
                 match self.fits(&rect, Some(id)) {
@@ -325,7 +368,10 @@ impl EditorState {
             }
             _ => {
                 self.pending_angle = normalize_angle(self.pending_angle + FRAC_PI_2);
-                self.status = format!("Поворот нового стеллажа: {:.0}°", self.pending_angle.to_degrees());
+                self.status = format!(
+                    "Поворот нового стеллажа: {:.0}°",
+                    self.pending_angle.to_degrees()
+                );
             }
         }
     }
@@ -348,7 +394,11 @@ impl EditorState {
         };
         if let Some(s) = self.warehouse.shelves.iter_mut().find(|s| s.id == id) {
             s.double_sided = !s.double_sided;
-            let text = if s.double_sided { "Доступ с двух сторон" } else { "Доступ только спереди" };
+            let text = if s.double_sided {
+                "Доступ с двух сторон"
+            } else {
+                "Доступ только спереди"
+            };
             self.status = text.to_string();
         }
         self.access.clear();
@@ -363,8 +413,6 @@ impl EditorState {
             .sum()
     }
 
-    // ───────────── товары ─────────────
-
     pub fn add_product(&mut self, name: &str, size: &str, demand: &str) -> Result<(), String> {
         let name = name.trim();
         if name.is_empty() {
@@ -373,7 +421,9 @@ impl EditorState {
         let size = if size.trim().is_empty() {
             1
         } else {
-            size.trim().parse::<u32>().map_err(|_| "Размер — целое число ячеек".to_string())?
+            size.trim()
+                .parse::<u32>()
+                .map_err(|_| "Размер — целое число ячеек".to_string())?
         };
         if size == 0 {
             return Err("Размер должен быть больше нуля".into());
@@ -390,7 +440,13 @@ impl EditorState {
             )
         };
         let id = ProductId(self.products.iter().map(|p| p.id.0).max().unwrap_or(0) + 1);
-        self.products.push(Product { id, sku: format!("SKU-{:04}", id.0), name: name.into(), size, demand });
+        self.products.push(Product {
+            id,
+            sku: format!("SKU-{:04}", id.0),
+            name: name.into(),
+            size,
+            demand,
+        });
         self.status = format!("Товар «{name}» добавлен");
         Ok(())
     }
@@ -405,10 +461,17 @@ impl EditorState {
         let mut items: Vec<&Product> = self
             .products
             .iter()
-            .filter(|p| q.is_empty() || p.name.to_lowercase().contains(&q) || p.sku.to_lowercase().contains(&q))
+            .filter(|p| {
+                q.is_empty()
+                    || p.name.to_lowercase().contains(&q)
+                    || p.sku.to_lowercase().contains(&q)
+            })
             .collect();
         items.sort_by(|a, b| {
-            let (da, db) = (a.demand.unwrap_or(f32::NEG_INFINITY), b.demand.unwrap_or(f32::NEG_INFINITY));
+            let (da, db) = (
+                a.demand.unwrap_or(f32::NEG_INFINITY),
+                b.demand.unwrap_or(f32::NEG_INFINITY),
+            );
             db.total_cmp(&da).then(a.id.cmp(&b.id))
         });
         items
@@ -416,13 +479,20 @@ impl EditorState {
             .map(|p| {
                 let place = match self.placement_of(p.id) {
                     Some(pl) => {
-                        let label = self.warehouse.shelf(pl.shelf).map_or("?", |s| s.label.as_str());
+                        let label = self
+                            .warehouse
+                            .shelf(pl.shelf)
+                            .map_or("?", |s| s.label.as_str());
                         format!("→ {label}{}", if pl.pinned { " [закреп.]" } else { "" })
                     }
                     None => "→ —".to_string(),
                 };
                 let demand = p.demand.map_or("—".to_string(), |d| format!("{d}"));
-                (p.id, format!("{} · спрос {} · {} яч. {}", p.name, demand, p.size, place), self.selected_product == Some(p.id))
+                (
+                    p.id,
+                    format!("{} · спрос {} · {} яч. {}", p.name, demand, p.size, place),
+                    self.selected_product == Some(p.id),
+                )
             })
             .collect()
     }
@@ -432,8 +502,12 @@ impl EditorState {
             self.status = "Выберите товар в списке и стеллаж на карте".into();
             return;
         };
-        let Some(size) = self.products.iter().find(|p| p.id == pid).map(|p| p.size) else { return };
-        let Some(capacity) = self.warehouse.shelf(sid).map(|s| s.capacity) else { return };
+        let Some(size) = self.products.iter().find(|p| p.id == pid).map(|p| p.size) else {
+            return;
+        };
+        let Some(capacity) = self.warehouse.shelf(sid).map(|s| s.capacity) else {
+            return;
+        };
         let used_by_others: u32 = self
             .placements
             .iter()
@@ -442,11 +516,18 @@ impl EditorState {
             .map(|x| x.size)
             .sum();
         if used_by_others + size > capacity {
-            self.status = format!("Не хватает места: свободно {} яч., нужно {size}", capacity.saturating_sub(used_by_others));
+            self.status = format!(
+                "Не хватает места: свободно {} яч., нужно {size}",
+                capacity.saturating_sub(used_by_others)
+            );
             return;
         }
         self.placements.retain(|p| p.product != pid);
-        self.placements.push(Placement { product: pid, shelf: sid, pinned: true });
+        self.placements.push(Placement {
+            product: pid,
+            shelf: sid,
+            pinned: true,
+        });
         self.status = "Товар закреплён за стеллажом".into();
     }
 
@@ -458,15 +539,13 @@ impl EditorState {
         match self.placements.iter_mut().find(|p| p.product == pid) {
             Some(p) => {
                 p.pinned = false;
-                self.status = "Закрепление снято: при следующей авторасстановке товар может переехать".into();
+                self.status =
+                    "Закрепление снято: при следующей авторасстановке товар может переехать".into();
             }
             None => self.status = "Товар не размещён".into(),
         }
     }
 
-    // ───────────── анализ и авторасстановка ─────────────
-
-    /// Считает маршруты и доступность. `false` — планировка некорректна (причина в `status`).
     pub fn analyze(&mut self) -> bool {
         if !self.has_outline() {
             self.status = "Сначала нарисуйте контур склада".into();
@@ -488,7 +567,6 @@ impl EditorState {
         true
     }
 
-    /// Расставляет товары: закреплённые остаются, остальные раскладываются по востребованности.
     pub fn auto_place(&mut self) {
         if self.access.len() != self.warehouse.shelves.len() && !self.analyze() {
             return;
@@ -497,33 +575,51 @@ impl EditorState {
             self.status = "Нет стеллажей".into();
             return;
         }
-        let plan = wh_layout::auto_place(&self.warehouse, &self.access, &self.products, &self.placements);
+        let plan = wh_layout::auto_place(
+            &self.warehouse,
+            &self.access,
+            &self.products,
+            &self.placements,
+        );
         self.placements = plan.placements;
         self.status = if plan.unplaced.is_empty() {
             format!("Размещено товаров: {}", self.placements.len())
         } else {
-            format!("Размещено {}, не поместилось {}", self.placements.len(), plan.unplaced.len())
+            format!(
+                "Размещено {}, не поместилось {}",
+                self.placements.len(),
+                plan.unplaced.len()
+            )
         };
     }
 
-    // ───────────── информация ─────────────
-
     pub fn shelf_info(&self) -> String {
-        let Some(id) = self.selected_shelf else { return String::new() };
-        let Some(shelf) = self.warehouse.shelf(id) else { return String::new() };
+        let Some(id) = self.selected_shelf else {
+            return String::new();
+        };
+        let Some(shelf) = self.warehouse.shelf(id) else {
+            return String::new();
+        };
         let fp = &shelf.footprint;
         let mut s = format!(
             "{} — {:.1}×{:.1} м{}\nЗанято {}/{} яч.",
             shelf.label,
             fp.half_w * 2.0,
             fp.half_d * 2.0,
-            if shelf.double_sided { ", двусторонний" } else { "" },
+            if shelf.double_sided {
+                ", двусторонний"
+            } else {
+                ""
+            },
             self.shelf_used(id),
             shelf.capacity
         );
         if let Some(a) = self.access.iter().find(|a| a.shelf == id) {
             match a.distance {
-                Some(d) => s.push_str(&format!(" · маршрут {d:.1} м · доступность {:.0}%", a.score * 100.0)),
+                Some(d) => s.push_str(&format!(
+                    " · маршрут {d:.1} м · доступность {:.0}%",
+                    a.score * 100.0
+                )),
                 None => s.push_str(" · недостижим"),
             }
         }
@@ -542,8 +638,6 @@ impl EditorState {
     }
 }
 
-// ───────────── вспомогательные ─────────────
-
 fn describe_issue(issue: &ValidationIssue) -> String {
     match issue {
         ValidationIssue::OutlineTooSmall => "контур слишком мал".into(),
@@ -557,7 +651,6 @@ fn describe_issue(issue: &ValidationIssue) -> String {
 
 fn snap(v: f64) -> f64 {
     let r = (v / GRID_STEP).round() * GRID_STEP;
-    // убираем шум float и «-0.0»
     let r = (r * 1e6).round() / 1e6;
     if r == 0.0 {
         0.0
@@ -579,7 +672,6 @@ fn normalize_angle(a: f64) -> f64 {
     }
 }
 
-/// Вход по умолчанию — у первой вершины, чуть сдвинутый внутрь.
 fn default_entrance(poly: &Polygon) -> Point {
     let v0 = poly.points[0];
     let n = poly.points.len() as f64;
@@ -609,7 +701,7 @@ mod tests {
         for (x, y) in [(0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)] {
             s.click(Point::new(x, y), 0.3);
         }
-        s.click(Point::new(0.05, 0.05), 0.3); // клик у первой точки замыкает контур
+        s.click(Point::new(0.05, 0.05), 0.3);
         s
     }
 
@@ -628,7 +720,7 @@ mod tests {
         let mut s = EditorState::new_empty();
         s.set_tool(Tool::Outline);
         s.click(Point::new(0.0, 0.0), 0.3);
-        s.click(Point::new(10.2, 0.7), 0.3); // почти горизонталь
+        s.click(Point::new(10.2, 0.7), 0.3);
         assert_eq!(s.draft[1].y, 0.0);
         s.ortho = false;
         s.click(Point::new(10.2, 5.0), 0.3);
@@ -692,7 +784,12 @@ mod tests {
             .max_by(|a, b| a.score.total_cmp(&b.score))
             .unwrap()
             .shelf;
-        let top = s.products.iter().max_by(|a, b| a.demand.partial_cmp(&b.demand).unwrap()).unwrap().id;
+        let top = s
+            .products
+            .iter()
+            .max_by(|a, b| a.demand.partial_cmp(&b.demand).unwrap())
+            .unwrap()
+            .id;
         assert_eq!(s.placement_of(top).map(|p| p.shelf), Some(best));
     }
 

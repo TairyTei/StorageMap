@@ -70,8 +70,6 @@ impl Viewport {
         );
     }
 
-    /// Сдвиг камеры перетаскиванием: `dx`, `dy` — смещение указателя в пикселях экрана.
-    /// Карта «едет» вместе с пальцем/курсором.
     pub fn pan_pixels(&mut self, dx: f64, dy: f64) {
         if !dx.is_finite() || !dy.is_finite() {
             return;

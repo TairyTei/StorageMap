@@ -1,13 +1,3 @@
-//! Кратчайший путь внутри многоугольника с прямоугольными препятствиями.
-//!
-//! Метод: граф видимости. Вершины графа — углы (раздутых на `clearance`) препятствий
-//! и «вогнутые» вершины контура, сдвинутые внутрь помещения. Рёбра — пары вершин,
-//! видимые друг другу. Кратчайший ломаный путь всегда проходит через такие вершины.
-//!
-//! Стоимость построения ≈ O(N² · (E + S)), где N — число вершин, E — рёбра контура,
-//! S — число препятствий. Для сотен стеллажей это доли секунды; граф строится один раз
-//! на планировку и переиспользуется для любого числа целей.
-
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -27,11 +17,14 @@ pub struct Navigator {
 }
 
 impl Navigator {
-    /// `obstacles` — уже раздутые на ширину прохода. `clearance` нужен только для
-    /// сдвига вогнутых углов контура.
     pub fn new(outline: Polygon, obstacles: Vec<OrientedRect>, clearance: f64) -> Self {
         let nodes = build_nodes(&outline, &obstacles, clearance);
-        let mut nav = Navigator { outline, obstacles, nodes, adj: Vec::new() };
+        let mut nav = Navigator {
+            outline,
+            obstacles,
+            nodes,
+            adj: Vec::new(),
+        };
         nav.adj = nav.build_adjacency();
         nav
     }
@@ -45,7 +38,11 @@ impl Navigator {
         if a.distance(b) < EPS {
             return true;
         }
-        if self.obstacles.iter().any(|o| o.segment_crosses_interior(a, b)) {
+        if self
+            .obstacles
+            .iter()
+            .any(|o| o.segment_crosses_interior(a, b))
+        {
             return false;
         }
         self.outline.contains_segment(a, b)
@@ -94,7 +91,12 @@ impl Navigator {
                 }
             }
         }
-        RouteField { nav: self, start, dist, prev }
+        RouteField {
+            nav: self,
+            start,
+            dist,
+            prev,
+        }
     }
 }
 
@@ -134,7 +136,10 @@ impl RouteField<'_> {
         }
         pts.push(self.start);
         pts.reverse();
-        Some(Route { points: pts, length })
+        Some(Route {
+            points: pts,
+            length,
+        })
     }
 }
 
@@ -221,7 +226,10 @@ mod tests {
     #[test]
     fn open_room_is_straight_line() {
         let nav = Navigator::new(square(10.0), vec![], 0.0);
-        let r = nav.routes_from(Point::new(1.0, 1.0)).route_to(Point::new(9.0, 7.0)).unwrap();
+        let r = nav
+            .routes_from(Point::new(1.0, 1.0))
+            .route_to(Point::new(9.0, 7.0))
+            .unwrap();
         assert_eq!(r.points.len(), 2);
         assert!((r.length - 10.0).abs() < 1e-9);
     }
@@ -231,7 +239,10 @@ mod tests {
         // Вертикальная перегородка x∈[4.5,5.5], y∈[1,9] в комнате 10×10.
         let wall = OrientedRect::new(Point::new(5.0, 5.0), 1.0, 8.0, 0.0);
         let nav = Navigator::new(square(10.0), vec![wall], 0.0);
-        let r = nav.routes_from(Point::new(1.0, 5.0)).route_to(Point::new(9.0, 5.0)).unwrap();
+        let r = nav
+            .routes_from(Point::new(1.0, 5.0))
+            .route_to(Point::new(9.0, 5.0))
+            .unwrap();
 
         let expected = 2.0 * (3.5_f64.powi(2) + 4.0_f64.powi(2)).sqrt() + 1.0;
         assert!((r.length - expected).abs() < 1e-6, "got {}", r.length);
@@ -264,7 +275,10 @@ mod tests {
         let top = OrientedRect::new(Point::new(5.0, 6.0), 4.0, 1.0, 0.0);
         let bottom = OrientedRect::new(Point::new(5.0, 4.0), 4.0, 1.0, 0.0);
         let nav = Navigator::new(square(10.0), vec![top, bottom], 0.0);
-        
-        assert!(nav.routes_from(Point::new(1.0, 1.0)).route_to(Point::new(5.0, 6.0)).is_none());
+
+        assert!(nav
+            .routes_from(Point::new(1.0, 1.0))
+            .route_to(Point::new(5.0, 6.0))
+            .is_none());
     }
 }

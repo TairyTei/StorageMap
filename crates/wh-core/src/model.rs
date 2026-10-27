@@ -77,6 +77,15 @@ impl Warehouse {
         self.shelves.iter().find(|s| s.id == id)
     }
 
+    pub fn move_shelf(&mut self, id: ShelfId, dx: f64, dy: f64) {
+        let Some(shelf) = self.shelves.iter_mut().find(|s| s.id == id) else {
+            return;
+        };
+
+        shelf.footprint.center.x += dx;
+        shelf.footprint.center.y += dy;
+    }
+
     pub fn validate(&self) -> Vec<ValidationIssue> {
         let mut issues = Vec::new();
 

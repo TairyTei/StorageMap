@@ -97,7 +97,14 @@ impl App {
         let tol = 12.0 / self.vp.scale;
         self.state.click(world, tol);
     }
+    fn pan(&mut self, dx: f32, dy: f32) {
+        let (dx64, dy64) = (dx as f64, dy as f64);
 
+        if (!self.state.drag(dx64, dy64)) {
+            self.auto_fit = false;
+            self.vp.pan_pixels(dx64, dy64);
+        }
+    }
     fn select_product(&mut self, row: usize) {
         let Some(&id) = self.visible_products.get(row) else {
             return;
@@ -261,7 +268,6 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
         a.auto_fit = false;
         a.vp.zoom(0.8);
     });
-    // Масштаб относительно точки под курсором / центра щипка.
     wire!(ui, app, on_zoom_at, |a, _w, fac: f32, x: f32, y: f32| {
         a.auto_fit = false;
         a.vp.zoom_at(fac.clamp(0.5, 2.0) as f64, x as f64, y as f64);
@@ -270,10 +276,8 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
         a.auto_fit = true;
         a.fit();
     });
-    // Перетаскивание карты: смещение указателя в логических пикселях.
     wire!(ui, app, on_pan_pixels, |a, _w, dx: f32, dy: f32| {
-        a.auto_fit = false;
-        a.vp.pan_pixels(dx as f64, dy as f64);
+        a.pan(dx, dy);
     });
     wire!(ui, app, on_view_mode_selected, |a, _w, mode: i32| a
         .view3d =
