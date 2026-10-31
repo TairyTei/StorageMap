@@ -13,5 +13,6 @@ wh-layout = { path = "crates/wh-layout" }
 wh-tools = { path = "crates/wh-tools" }
 wh-storage = { path = "crates/wh-storage" }
 gui-core = { path = "crates/gui-core" }
+wh-storage-postgres = { path = "crates/wh-storage-postgres" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

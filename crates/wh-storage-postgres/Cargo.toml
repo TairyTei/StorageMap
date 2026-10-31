@@ -1,0 +1,10 @@
+[package]
+name = "wh-storage-postgres"
+version = "0.1.0"
+edition = "2021"
+description = "PostgreSQL backend for wh-storage (schema browsable in pgAdmin)"
+
+[dependencies]
+wh-core = { path = "../wh-core" }
+wh-storage = { path = "../wh-storage" } # поправьте имя/путь под ваш workspace
+postgres = "0.19"

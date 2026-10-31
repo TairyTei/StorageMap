@@ -9,6 +9,7 @@ wh-core.workspace = true
 wh-nav.workspace = true
 wh-layout.workspace = true
 wh-storage.workspace = true
+wh-storage-postgres.workspace = true
 
 slint = { version = "1", default-features = false, features = ["std", "compat-1-2"] }
 

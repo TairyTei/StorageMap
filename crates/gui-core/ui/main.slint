@@ -1,4 +1,4 @@
-import { CheckBox, ComboBox, LineEdit, ListView } from "std-widgets.slint";
+import { CheckBox, ComboBox, LineEdit, ListView, ProgressIndicator } from "std-widgets.slint";
 import { CustomButton } from "components/custom_button.slint";
 import { Palette } from "palette.slint";
 import { SectionTitle, ActionButton, InfoText } from "components/basic_components.slint";
@@ -35,17 +35,30 @@ export component MainWindow inherits Window {
                 shortcut: @keys(Control + N);
                 activated => { EditorApi.new-project() }
             }
+            MenuSeparator {}
             MenuItem {
                 title: @tr("Открыть...");
                 shortcut: @keys(Control + O);
                 activated => { EditorApi.load-project() }
             }
-
-            MenuSeparator {}
-
             MenuItem {
                 title: @tr("Сохранить");
                 activated => { EditorApi.save-project() }
+            }
+            MenuSeparator {}
+            MenuItem {
+                title: @tr("Подключиться к postgres");
+                shortcut: @keys(Control + O);
+                activated => { EditorApi.connect_pg() }
+            }
+            MenuItem {
+                title: @tr("Загрузить с postgres...");
+                shortcut: @keys(Control + O);
+                activated => { EditorApi.load_project_pg() }
+            }
+            MenuItem {
+                title: @tr("Сохранить в postgres");
+                activated => { EditorApi.save_project_pg() }
             }
         }
     }
@@ -126,7 +139,7 @@ export component MainWindow inherits Window {
 
                 HorizontalLayout {
                     padding: 4px;
-
+                    spacing: 4px;
                     HorizontalLayout {
                         InfoText {
                             text: "out:";
@@ -137,6 +150,7 @@ export component MainWindow inherits Window {
                             text: EditorApi.status;
                             color: Palette.accent;
                         }
+                        Rectangle {}
                     }
                 }
             }

@@ -6,6 +6,7 @@ use std::time::Duration;
 use slint::{Color, ComponentHandle, ModelRc, SharedString, Timer, TimerMode, VecModel};
 use wh_core::{sample::demo_snapshot, ProductId, ShelfId, Snapshot};
 use wh_storage::json;
+use wh_storage_postgres::{self, PostgresStorage};
 
 use crate::editor::{EditorState, PRESETS};
 use crate::scene::{self, point_in_poly, Scene};
@@ -35,6 +36,7 @@ struct App {
     visible_products: Vec<ProductId>,
     hit: Vec<(ShelfId, Vec<(f64, f64)>)>,
     file: PathBuf,
+    pgstorage: Option<PostgresStorage>,
 }
 
 impl App {
@@ -62,6 +64,7 @@ impl App {
             visible_products: vec![],
             hit: vec![],
             file: opts.file.clone(),
+            pgstorage: Option::None,
         }
     }
 
@@ -135,6 +138,41 @@ impl App {
         }
     }
 
+    fn save_pg(&mut self) {
+        self.state.status = match &self.pgstorage {
+            Some(pgstorage) => {
+                match PostgresStorage::save_snapshot(pgstorage, &self.state.snapshot()) {
+                    Ok(()) => format!("Сохранено: {}", self.file.display()),
+                    Err(e) => format!("Ошибка сохранения: {e}"),
+                }
+            }
+            None => format!("Theresno connection"),
+        }
+    }
+
+    fn load_pg(&mut self) {
+        self.state.status = match &self.pgstorage {
+            Some(pgstorage) => {
+                match PostgresStorage::load_snapshot(pgstorage, self.state.warehouse.id) {
+                    Ok(snapshot) => {
+                        self.replace_state(snapshot);
+                        format!("Загружено: {}", self.file.display())
+                    }
+                    Err(e) => format!("Не удалось открыть: {e}"),
+                }
+            }
+            None => format!("Theresno connection"),
+        }
+    }
+    fn connect_pg(&mut self, connection_string: &str) {
+        self.state.status = match PostgresStorage::connect(connection_string) {
+            Ok(pgstorage) => {
+                self.pgstorage = Some(pgstorage);
+                format!("connected")
+            }
+            Err(error) => format!("{error}"),
+        }
+    }
     fn replace_state(&mut self, snapshot: Snapshot) {
         let ortho = self.state.ortho;
         self.state = EditorState::from_snapshot(snapshot);
@@ -344,6 +382,13 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
     });
     wire!(ui, app, on_save_project, |a, _w| a.save());
     wire!(ui, app, on_load_project, |a, _w| a.load());
+
+    //pg
+    wire!(ui, app, on_save_project_pg, |a, _w| a.save_pg());
+    wire!(ui, app, on_load_project_pg, |a, _w| a.load_pg());
+    wire!(ui, app, on_connect_pg, |a, _w| a.connect_pg(
+        "host=localhost user=postgres password=password dbname=warehouse"
+    ));
 
     let timer = Timer::default();
     {
