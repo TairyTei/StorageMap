@@ -1,77 +1,11 @@
 import { CheckBox, ComboBox, LineEdit, ListView } from "std-widgets.slint";
-import { CustomButton } from "custom_button.slint";
+import { CustomButton } from "components/custom_button.slint";
+import { Palette } from "palette.slint";
+import { SectionTitle, ActionButton, InfoText } from "components/basic_components.slint";
+import { RenderCanvas } from "components/render_canvas.slint";
+import { EditorApi } from "globals.slint";
 
-export struct ShelfView {
-    commands: string,
-    color: color,
-    label: string,
-    lx: length,
-    ly: length,
-    selected: bool,
-}
-
-export struct LabelView {
-    x: length,
-    y: length,
-    text: string,
-}
-
-export struct ProductView {
-    text: string,
-    selected: bool,
-}
-
-global Palette {
-    out property <color> bg: #242933;
-    out property <color> canvas: bg.darker(0.4);
-    out property <color> grid: bg.darker(0.2);
-    out property <color> floor: bg.darker(0.3);
-    out property <color> button: #373f4f;
-    out property <color> button-active: button.brighter(0.7);
-    out property <color> analyze: #5f8f47;
-    out property <color> place: #476d8f;
-    out property <color> muted: #9aa4b8;
-    out property <color> text: #e6e6e6;
-    out property <color> bright: #ffffff;
-    out property <color> accent: #ffd54a;
-    out property <color> route: #4fc3f7;
-    out property <color> entrance: #ff7043;
-    out property <color> map-label: #9ad1ff;
-    out property <color> shelf-border: #101014;
-    out property <color> row: #20232b;
-    out property <color> row-selected: #2f4b7c;
-}
-
-component Layer inherits Path {
-    width: 100%;
-    height: 100%;
-    viewbox-width: self.width / 1px;
-    viewbox-height: self.height / 1px;
-}
-
-component SectionTitle inherits Text {
-    color: Palette.muted;
-    font-size: 12px;
-}
-
-component InfoText inherits Text {
-    font-size: 12px;
-    wrap: word-wrap;
-}
-
-component MapLabel inherits Text {
-    in property <length> cx;
-    in property <length> cy;
-    x: cx - self.width / 2;
-    y: cy - self.height / 2;
-    horizontal-alignment: center;
-    vertical-alignment: center;
-}
-
-component ActionButton inherits CustomButton {
-    base-color: Palette.button;
-    accent-color: Palette.button-active;
-}
+export { EditorApi, SceneData } from "globals.slint";
 
 export component MainWindow inherits Window {
     title: "Warehouse Map";
@@ -81,104 +15,43 @@ export component MainWindow inherits Window {
     min-height: 560px;
     background: @linear-gradient(180deg, Palette.bg 0%, Palette.bg.darker(0.2) 100%);
 
-    property <bool> dragged: false;
-    property <length> press-x: 0px;
-    property <length> press-y: 0px;
-    property <length> last-x: 0px;
-    property <length> last-y: 0px;
-    property <float> pinch-last: 1.0;
-    property <bool> preview-visible: root.preview-active && touch.has-hover && root.view-mode == 0;
-    property <float> preview-meters: Math.round(Math.sqrt(Math.pow((touch.mouse-x - root.preview-from-x) / 1px, 2) + Math.pow((touch.mouse-y - root.preview-from-y) / 1px, 2)) / root.px-per-m * 100) / 100;
+    out property <length> canvas-width: canvas.width;
+    out property <length> canvas-height: canvas.height;
+
     property <[{icon: image, base: color, accent: color}]> tools: [
         { icon: @image-url("assets/Arrow.png"), base: Palette.button, accent: Palette.button-active },
         { icon: @image-url("assets/Line.png"), base: #303e5c.darker(0.3), accent: #4a6396.darker(0.3) },
         { icon: @image-url("assets/Storage.png"), base: #515c3d.darker(0.3), accent: #77a339.darker(0.3) },
         { icon: @image-url("assets/Enter.png"), base: #694d3f.darker(0.3), accent: #b0653c.darker(0.3) },
-        { icon: @image-url("assets/Enter.png"), base: #5c3549.darker(0.3), accent: #b03c76.darker(0.3) },
+        { icon: @image-url("assets/Measure.png"), base: #5c3549.darker(0.3), accent: #b03c76.darker(0.3) },
     ];
 
-    in property <bool> editor-mode: true;
-    in-out property <int> tool: 0;
-    in-out property <int> view-mode: 0;
-    in-out property <bool> ortho: true;
-
-    in property <[string]> preset-names;
-    in property <string> status;
-    in property <string> shelf-info;
-    in property <[ShelfView]> shelves;
-    in property <[LabelView]> labels;
-    in property <[ProductView]> products;
-    in property <string> grid-path: "M 0 0";
-    in property <string> floor-path: "M 0 0";
-    in property <string> draft-path: "M 0 0";
-    in property <string> marker-path: "M 0 0";
-    in property <string> route-path: "M 0 0";
-    in property <string> entrance-path: "M 0 0";
-    in property <bool> preview-active: false;
-    in property <length> preview-from-x;
-    in property <length> preview-from-y;
-    in property <float> px-per-m: 1;
-
-    in-out property <string> new-name;
-    in-out property <string> new-size;
-    in-out property <string> new-demand;
-
-    out property <length> canvas-width: canvas.width;
-    out property <length> canvas-height: canvas.height;
-
-    callback canvas-clicked(length, length);
-    callback tool-selected(int);
-    callback preset-selected(int);
-    callback view-mode-selected(int);
-    callback product-clicked(int);
-    callback search-edited(string);
-    callback close-outline();
-    callback undo-point();
-    callback rotate-shelf();
-    callback delete-shelf();
-    callback toggle-double-sided();
-    callback analyze-clicked();
-    callback place-clicked();
-    callback new-project();
-    callback save-project();
-    callback load-project();
-
-    callback zoom-in();
-    callback zoom-out();
-    callback zoom-at(float, length, length);
-    callback pan-pixels(length, length);
-
-    callback fit-view();
-    callback add-product();
-    callback pin-product();
-    callback unpin-product();
-
-    if root.editor-mode: MenuBar {
+    if EditorApi.editor-mode: MenuBar {
         Menu {
             title: @tr("Файл");
 
             MenuItem {
                 title: @tr("Новый");
                 shortcut: @keys(Control + N);
-                activated => { root.new-project() }
+                activated => { EditorApi.new-project() }
             }
             MenuItem {
                 title: @tr("Открыть...");
                 shortcut: @keys(Control + O);
-                activated => { root.load-project() }
+                activated => { EditorApi.load-project() }
             }
 
             MenuSeparator {}
 
             MenuItem {
                 title: @tr("Сохранить");
-                activated => { root.save-project() }
+                activated => { EditorApi.save-project() }
             }
         }
     }
 
     HorizontalLayout {
-        if root.editor-mode: VerticalLayout {
+        if EditorApi.editor-mode: VerticalLayout {
             width: 200px;
             padding: 8px;
             spacing: 6px;
@@ -194,180 +67,76 @@ export component MainWindow inherits Window {
                     height: 30px;
                     base-color: t.base;
                     accent-color: t.accent;
-                    primary: root.tool == i;
-                    clicked => { root.tool-selected(i) }
+                    primary: EditorApi.tool == i;
+                    clicked => { EditorApi.tool-selected(i) }
                 }
             }
 
             SectionTitle { text: "Контур"; }
             CheckBox {
-                text: "Ортогонально";
-                checked <=> root.ortho;
+                text: "Выравнивать линию";
+                checked <=> EditorApi.ortho;
             }
             ActionButton {
                 text: "Замкнуть контур";
-                clicked => { root.close-outline() }
+                clicked => { EditorApi.close-outline() }
             }
             ActionButton {
                 text: "Отменить точку";
-                clicked => { root.undo-point() }
+                clicked => { EditorApi.undo-point() }
             }
 
             SectionTitle { text: "Стеллаж"; }
             ComboBox {
-                model: root.preset-names;
+                model: EditorApi.preset-names;
                 current-index: 0;
-                selected => { root.preset-selected(self.current-index) }
+                selected => { EditorApi.preset-selected(self.current-index) }
             }
             ActionButton {
                 text: "Повернуть на 90°";
-                clicked => { root.rotate-shelf() }
+                clicked => { EditorApi.rotate-shelf() }
             }
             ActionButton {
                 text: "Две стороны вкл/выкл";
-                clicked => { root.toggle-double-sided() }
+                clicked => { EditorApi.toggle-double-sided() }
             }
             ActionButton {
                 text: "Удалить выбранный";
-                clicked => { root.delete-shelf() }
+                clicked => { EditorApi.delete-shelf() }
             }
 
             SectionTitle { text: "Расчёт"; }
             CustomButton {
                 text: "Рассчитать доступность";
                 base-color: Palette.analyze;
-                clicked => { root.analyze-clicked() }
+                clicked => { EditorApi.analyze-clicked() }
             }
             CustomButton {
                 text: "Расспределить товары";
                 base-color: Palette.place;
-                clicked => { root.place-clicked() }
+                clicked => { EditorApi.place-clicked() }
             }
         }
 
-        canvas := Rectangle {
-            horizontal-stretch: 1;
-            background: Palette.canvas;
-            clip: true;
+        VerticalLayout {
+            canvas := RenderCanvas {}
 
-            Layer {
-                commands: root.grid-path;
-                stroke: Palette.grid;
-                stroke-width: 1px;
-            }
-            Layer {
-                commands: root.floor-path;
-                fill: Palette.floor;
-                stroke: Palette.button-active;
-                stroke-width: 2px;
-            }
-            Layer {
-                commands: root.route-path;
-                stroke: Palette.route;
-                stroke-width: 3px;
-            }
+            Rectangle {
+                background: Palette.bg.darker(2);
 
-            for s in root.shelves: Layer {
-                commands: s.commands;
-                fill: s.color;
-                stroke: s.selected ? Palette.bright : Palette.shelf-border;
-                stroke-width: s.selected ? 2.5px : 1px;
-            }
+                HorizontalLayout {
+                    padding: 4px;
 
-            Layer {
-                commands: root.draft-path;
-                stroke: Palette.accent;
-                stroke-width: 2px;
-            }
-            Layer {
-                commands: root.marker-path;
-                fill: Palette.accent;
-            }
-            Layer {
-                commands: root.entrance-path;
-                fill: Palette.entrance;
-                stroke: Palette.bright;
-                stroke-width: 1px;
-            }
-
-            for s in root.shelves: MapLabel {
-                cx: s.lx;
-                cy: s.ly;
-                width: 100px;
-                height: 18px;
-                text: s.label;
-                color: Palette.bright;
-                font-size: 11px;
-            }
-            for l in root.labels: MapLabel {
-                cx: l.x;
-                cy: l.y;
-                width: 80px;
-                height: 16px;
-                text: l.text;
-                color: Palette.map-label;
-                font-size: 10px;
-            }
-
-            Layer {
-                visible: root.preview-visible;
-                commands: "M \{root.preview-from-x / 1px} \{root.preview-from-y / 1px} L \{touch.mouse-x / 1px} \{touch.mouse-y / 1px}";
-                stroke: Palette.accent;
-                stroke-width: 1px;
-            }
-            Text {
-                visible: root.preview-visible;
-                x: touch.mouse-x + 14px;
-                y: touch.mouse-y + 14px;
-                color: Palette.accent;
-                font-size: 12px;
-                text: "\{root.preview-meters} м";
-            }
-
-            pinch := ScaleRotateGestureHandler {
-                started => {
-                    root.pinch-last = 1.0;
-                    root.dragged = true;
-                }
-                updated => {
-                    if (root.pinch-last > 0.0) {
-                        root.zoom-at(self.scale / root.pinch-last, self.center.x, self.center.y);
-                    }
-                    root.pinch-last = self.scale;
-                    root.last-x = touch.mouse-x;
-                    root.last-y = touch.mouse-y;
-                }
-
-                touch := TouchArea {
-                    clicked => {
-                        if (!root.dragged) {
-                            root.canvas-clicked(self.mouse-x, self.mouse-y);
+                    HorizontalLayout {
+                        InfoText {
+                            text: "out:";
+                            color: white.transparentize(0.4);
+                            font-weight: 700;
                         }
-                    }
-                    pointer-event(event) => {
-                        if (event.kind == PointerEventKind.down) {
-                            root.dragged = false;
-                            root.press-x = self.mouse-x;
-                            root.press-y = self.mouse-y;
-                            root.last-x = self.mouse-x;
-                            root.last-y = self.mouse-y;
+                        InfoText {
+                            text: EditorApi.status;
+                            color: Palette.accent;
                         }
-                    }
-                    moved => {
-                        if (self.pressed && !pinch.active) {
-                            if (!root.dragged && (Math.abs((self.mouse-x - root.press-x) / 1px) > 8 || Math.abs((self.mouse-y - root.press-y) / 1px) > 8)) {
-                                root.dragged = true;
-                            }
-                            if (root.dragged) {
-                                root.pan-pixels(self.mouse-x - root.last-x, self.mouse-y - root.last-y);
-                                root.last-x = self.mouse-x;
-                                root.last-y = self.mouse-y;
-                            }
-                        }
-                    }
-                    scroll-event(event) => {
-                        root.zoom-at(Math.exp(event.delta-y / 1px * 0.002), self.mouse-x, self.mouse-y);
-                        accept
                     }
                 }
             }
@@ -378,40 +147,20 @@ export component MainWindow inherits Window {
             padding: 8px;
             spacing: 6px;
 
-            HorizontalLayout {
-                spacing: 6px;
-
-                for mode[i] in ["2D", "3D"]: ActionButton {
-                    text: mode;
-                    height: self.width;
-                    primary: root.view-mode == i;
-                    clicked => { root.view-mode-selected(i) }
-                }
-            }
-
-            ActionButton {
-                text: "Вписать";
-                clicked => { root.fit-view() }
-            }
-
             InfoText {
-                text: root.status;
-                color: Palette.accent;
-            }
-            InfoText {
-                text: root.shelf-info;
+                text: EditorApi.shelf-info;
                 color: Palette.text;
             }
 
             SectionTitle { text: "Товары"; }
             LineEdit {
                 placeholder-text: "Поиск по названию или SKU";
-                edited(t) => { root.search-edited(t) }
+                edited(t) => { EditorApi.search-edited(t) }
             }
             ListView {
                 vertical-stretch: 1;
 
-                for p[i] in root.products: Rectangle {
+                for p[i] in EditorApi.products: Rectangle {
                     height: 26px;
                     background: p.selected ? Palette.row-selected : Palette.row;
 
@@ -426,12 +175,12 @@ export component MainWindow inherits Window {
                         font-size: 12px;
                     }
                     TouchArea {
-                        clicked => { root.product-clicked(i) }
+                        clicked => { EditorApi.product-clicked(i) }
                     }
                 }
             }
 
-            if root.editor-mode: VerticalLayout {
+            if EditorApi.editor-mode: VerticalLayout {
                 spacing: 6px;
 
                 SectionTitle {
@@ -441,7 +190,7 @@ export component MainWindow inherits Window {
                 }
                 LineEdit {
                     placeholder-text: "Название";
-                    text <=> root.new-name;
+                    text <=> EditorApi.new-name;
                     vertical-stretch: 0;
                     height: 35px;
                 }
@@ -450,14 +199,14 @@ export component MainWindow inherits Window {
 
                     LineEdit {
                         placeholder-text: "Ячеек";
-                        text <=> root.new-size;
+                        text <=> EditorApi.new-size;
                         horizontal-stretch: 1;
                         height: 35px;
                         min-width: 0px;
                     }
                     LineEdit {
                         placeholder-text: "Спрос";
-                        text <=> root.new-demand;
+                        text <=> EditorApi.new-demand;
                         horizontal-stretch: 1;
                         height: 35px;
                         min-width: 0px;
@@ -465,18 +214,18 @@ export component MainWindow inherits Window {
                 }
                 ActionButton {
                     text: "Добавить товар";
-                    clicked => { root.add-product() }
+                    clicked => { EditorApi.add-product() }
                 }
                 HorizontalLayout {
                     spacing: 6px;
 
                     ActionButton {
                         text: "Закрепить";
-                        clicked => { root.pin-product() }
+                        clicked => { EditorApi.pin-product() }
                     }
                     ActionButton {
                         text: "Открепить";
-                        clicked => { root.unpin-product() }
+                        clicked => { EditorApi.unpin-product() }
                     }
                 }
             }

@@ -1,0 +1,141 @@
+import { Layer, MapLabel, ActionButton } from "basic_components.slint";
+import { Palette } from "../palette.slint";
+import { SceneData, EditorApi } from "../globals.slint";
+
+component ViewControls inherits VerticalLayout {
+    spacing: 6px;
+
+    HorizontalLayout {
+        spacing: 6px;
+        for mode[i] in ["2D", "3D"]: ActionButton {
+            text: mode;
+            height: self.width;
+            primary: EditorApi.view-mode == i;
+            clicked => { EditorApi.view-mode-selected(i) }
+        }
+    }
+    if EditorApi.view-mode == 0: ActionButton {
+        text: "Вписать";
+        clicked => { EditorApi.fit-view() }
+    }
+}
+
+export component RenderCanvas inherits Rectangle {
+    background: Palette.canvas;
+    clip: true;
+
+    property <bool> dragged: false;
+    property <length> press-x: 0px;
+    property <length> press-y: 0px;
+    property <length> last-x: 0px;
+    property <length> last-y: 0px;
+    property <float> pinch-last: 1.0;
+
+    property <bool> preview-visible: SceneData.preview-active && touch.has-hover && EditorApi.view-mode == 0;
+    property <float> preview-meters: Math.round(Math.sqrt(
+        Math.pow((touch.mouse-x - SceneData.preview-from-x) / 1px, 2) +
+        Math.pow((touch.mouse-y - SceneData.preview-from-y) / 1px, 2)
+    ) / SceneData.px-per-m * 100) / 100;
+
+    Layer { commands: SceneData.grid-path; stroke: Palette.grid; stroke-width: 1px; }
+    Layer {
+        commands: SceneData.floor-path;
+        fill: Palette.floor;
+        stroke: Palette.button-active;
+        stroke-width: 2px;
+    }
+    Layer { commands: SceneData.route-path; stroke: Palette.route; stroke-width: 3px; }
+
+    for s in SceneData.shelves: Layer {
+        commands: s.commands;
+        fill: s.color;
+        stroke: s.selected ? Palette.bright : Palette.shelf-border;
+        stroke-width: s.selected ? 2.5px : 1px;
+    }
+
+    Layer { commands: SceneData.draft-path; stroke: Palette.accent; stroke-width: 2px; }
+    Layer { commands: SceneData.marker-path; fill: Palette.accent; }
+    Layer {
+        commands: SceneData.entrance-path;
+        fill: Palette.entrance;
+        stroke: Palette.bright;
+        stroke-width: 1px;
+    }
+
+    for s in SceneData.shelves: MapLabel {
+        cx: s.lx; cy: s.ly; width: 100px; height: 18px;
+        text: s.label; color: Palette.bright; font-size: 11px;
+    }
+    for l in SceneData.labels: MapLabel {
+        cx: l.x; cy: l.y; width: 80px; height: 16px;
+        text: l.text; color: Palette.map-label; font-size: 10px;
+    }
+
+    Layer {
+        visible: root.preview-visible;
+        commands: "M \{SceneData.preview-from-x / 1px} \{SceneData.preview-from-y / 1px} L \{touch.mouse-x / 1px} \{touch.mouse-y / 1px}";
+        stroke: Palette.accent;
+        stroke-width: 1px;
+    }
+    Text {
+        visible: root.preview-visible;
+        x: touch.mouse-x + 14px;
+        y: touch.mouse-y + 14px;
+        color: Palette.accent;
+        font-size: 12px;
+        text: "\{root.preview-meters} м";
+    }
+
+    pinch := ScaleRotateGestureHandler {
+        started => {
+            root.pinch-last = 1.0;
+            root.dragged = true;
+        }
+        updated => {
+            if (root.pinch-last > 0.0) {
+                EditorApi.zoom-at(self.scale / root.pinch-last, self.center.x, self.center.y);
+            }
+            root.pinch-last = self.scale;
+            root.last-x = touch.mouse-x;
+            root.last-y = touch.mouse-y;
+        }
+
+        touch := TouchArea {
+            clicked => {
+                if (!root.dragged) { EditorApi.canvas-clicked(self.mouse-x, self.mouse-y); }
+            }
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down) {
+                    root.dragged = false;
+                    root.press-x = self.mouse-x;
+                    root.press-y = self.mouse-y;
+                    root.last-x = self.mouse-x;
+                    root.last-y = self.mouse-y;
+                }
+            }
+            moved => {
+                if (self.pressed && !pinch.active) {
+                    if (!root.dragged && (Math.abs((self.mouse-x - root.press-x) / 1px) > 8
+                        || Math.abs((self.mouse-y - root.press-y) / 1px) > 8)) {
+                        root.dragged = true;
+                    }
+                    if (root.dragged) {
+                        EditorApi.pan-pixels(self.mouse-x - root.last-x, self.mouse-y - root.last-y);
+                        root.last-x = self.mouse-x;
+                        root.last-y = self.mouse-y;
+                    }
+                }
+            }
+            scroll-event(event) => {
+                EditorApi.zoom-at(Math.exp(event.delta-y / 1px * 0.002), self.mouse-x, self.mouse-y);
+                accept
+            }
+        }
+    }
+
+    ViewControls {
+        x: 8px;
+        y: 8px;
+        width: 2 * 32px + 6px;
+    }
+}

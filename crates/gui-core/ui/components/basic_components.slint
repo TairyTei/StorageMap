@@ -1,0 +1,32 @@
+import { CustomButton } from "custom_button.slint";
+import { Palette } from "../palette.slint";
+
+export component Layer inherits Path {
+    width: 100%;
+    height: 100%;
+    viewbox-width: self.width / 1px;
+    viewbox-height: self.height / 1px;
+}
+export component SectionTitle inherits Text {
+    color: Palette.muted;
+    font-size: 12px;
+}
+
+export component InfoText inherits Text {
+    font-size: 12px;
+    wrap: word-wrap;
+}
+
+export component MapLabel inherits Text {
+    in property <length> cx;
+    in property <length> cy;
+    x: cx - self.width / 2;
+    y: cy - self.height / 2;
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
+
+export component ActionButton inherits CustomButton {
+    base-color: Palette.button;
+    accent-color: Palette.button-active;
+}

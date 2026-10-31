@@ -1,0 +1,56 @@
+import { LabelView, ShelfView, ProductView } from "models.slint";
+
+export global SceneData {
+    in property <string> grid-path: "M 0 0";
+    in property <string> floor-path: "M 0 0";
+    in property <string> draft-path: "M 0 0";
+    in property <string> marker-path: "M 0 0";
+    in property <string> route-path: "M 0 0";
+    in property <string> entrance-path: "M 0 0";
+    in property <[ShelfView]> shelves;
+    in property <[LabelView]> labels;
+    in property <bool> preview-active: false;
+    in property <length> preview-from-x;
+    in property <length> preview-from-y;
+    in property <float> px-per-m: 1;
+}
+
+export global EditorApi {
+    in property <bool> editor-mode: true;
+    in property <int> tool: 0;
+    in property <int> view-mode: 0;
+    in-out property <bool> ortho: true;
+    in property <string> status;
+    in property <string> shelf-info;
+    in property <[string]> preset-names;
+    in property <[ProductView]> products;
+    in-out property <string> new-name;
+    in-out property <string> new-size;
+    in-out property <string> new-demand;
+
+    callback canvas-clicked(length, length);
+    callback zoom-in();
+    callback zoom-out();
+    callback zoom-at(float, length, length);
+    callback pan-pixels(length, length);
+    callback fit-view();
+    callback view-mode-selected(int);
+
+    callback tool-selected(int);
+    callback preset-selected(int);
+    callback product-clicked(int);
+    callback search-edited(string);
+    callback close-outline();
+    callback undo-point();
+    callback rotate-shelf();
+    callback delete-shelf();
+    callback toggle-double-sided();
+    callback analyze-clicked();
+    callback place-clicked();
+    callback add-product();
+    callback pin-product();
+    callback unpin-product();
+    callback new-project();
+    callback save-project();
+    callback load-project();
+}

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
-use slint::{Color, ModelRc, SharedString, Timer, TimerMode, VecModel};
+use slint::{Color, ComponentHandle, ModelRc, SharedString, Timer, TimerMode, VecModel};
 use wh_core::{sample::demo_snapshot, ProductId, ShelfId, Snapshot};
 use wh_storage::json;
 
@@ -143,6 +143,9 @@ impl App {
     }
 
     fn push(&mut self, ui: &MainWindow) {
+        let sd = ui.global::<SceneData>();
+        let api = ui.global::<EditorApi>();
+
         if self.state.fit_requested {
             self.state.fit_requested = false;
             self.auto_fit = true;
@@ -155,12 +158,12 @@ impl App {
             scene::build_2d(&self.state, &self.vp)
         };
 
-        ui.set_grid_path(path(&scene.grid));
-        ui.set_floor_path(path(&scene.floor));
-        ui.set_draft_path(path(&scene.draft));
-        ui.set_marker_path(path(&scene.markers));
-        ui.set_route_path(path(&scene.route));
-        ui.set_entrance_path(path(&scene.entrance));
+        sd.set_grid_path(path(&scene.grid));
+        sd.set_floor_path(path(&scene.floor));
+        sd.set_draft_path(path(&scene.draft));
+        sd.set_marker_path(path(&scene.markers));
+        sd.set_route_path(path(&scene.route));
+        sd.set_entrance_path(path(&scene.entrance));
 
         let shelves: Vec<ShelfView> = scene
             .shelves
@@ -174,7 +177,7 @@ impl App {
                 selected: s.selected,
             })
             .collect();
-        ui.set_shelves(ModelRc::new(VecModel::from(shelves)));
+        sd.set_shelves(ModelRc::new(VecModel::from(shelves)));
 
         let labels: Vec<LabelView> = scene
             .labels
@@ -185,17 +188,17 @@ impl App {
                 text: l.text.as_str().into(),
             })
             .collect();
-        ui.set_labels(ModelRc::new(VecModel::from(labels)));
+        sd.set_labels(ModelRc::new(VecModel::from(labels)));
 
         match scene.preview_from {
             Some((x, y)) if !self.view3d => {
-                ui.set_preview_from_x(x);
-                ui.set_preview_from_y(y);
-                ui.set_preview_active(true);
+                sd.set_preview_from_x(x);
+                sd.set_preview_from_y(y);
+                sd.set_preview_active(true);
             }
-            _ => ui.set_preview_active(false),
+            _ => sd.set_preview_active(false),
         }
-        ui.set_px_per_m(scene.px_per_m);
+        sd.set_px_per_m(scene.px_per_m);
 
         let rows = self.state.product_rows(&self.search);
         self.visible_products = rows.iter().map(|(id, _, _)| *id).collect();
@@ -206,12 +209,12 @@ impl App {
                 selected,
             })
             .collect();
-        ui.set_products(ModelRc::new(VecModel::from(products)));
+        api.set_products(ModelRc::new(VecModel::from(products)));
 
-        ui.set_tool(self.state.tool.index());
-        ui.set_view_mode(if self.view3d { 1 } else { 0 });
-        ui.set_status(self.state.status.as_str().into());
-        ui.set_shelf_info(self.state.shelf_info().into());
+        api.set_tool(self.state.tool.index());
+        api.set_view_mode(if self.view3d { 1 } else { 0 });
+        api.set_status(self.state.status.as_str().into());
+        api.set_shelf_info(self.state.shelf_info().into());
 
         self.hit = scene.hit;
     }
@@ -227,14 +230,14 @@ fn path(commands: &str) -> SharedString {
 
 fn sync_from_ui(ui: &MainWindow, app: &mut App) {
     app.set_size(ui.get_canvas_width() as f64, ui.get_canvas_height() as f64);
-    app.state.ortho = ui.get_ortho();
+    app.state.ortho = ui.global::<EditorApi>().get_ortho();
 }
 
 macro_rules! wire {
     ($ui:expr, $app:expr, $on:ident, |$a:ident, $w:ident $(, $arg:ident : $ty:ty)*| $body:expr) => {{
         let app = Rc::clone(&$app);
         let weak = $ui.as_weak();
-        $ui.$on(move |$($arg: $ty),*| {
+        $ui.global::<EditorApi>().$on(move |$($arg: $ty),*| {
             if let Some(ui) = weak.upgrade() {
                 {
                     let mut guard = app.borrow_mut();
@@ -253,13 +256,16 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
     let ui = MainWindow::new()?;
     let app = Rc::new(RefCell::new(App::new(&opts)));
 
-    ui.set_editor_mode(opts.mode == Mode::Editor);
-    ui.set_preset_names(ModelRc::new(VecModel::from(
-        PRESETS
-            .iter()
-            .map(|p| SharedString::from(p.name))
-            .collect::<Vec<_>>(),
-    )));
+    {
+        let api = ui.global::<EditorApi>();
+        api.set_editor_mode(opts.mode == Mode::Editor);
+        api.set_preset_names(ModelRc::new(VecModel::from(
+            PRESETS
+                .iter()
+                .map(|p| SharedString::from(p.name))
+                .collect::<Vec<_>>(),
+        )));
+    }
 
     wire!(ui, app, on_canvas_clicked, |a, _w, x: f32, y: f32| a
         .click(x as f64, y as f64));
@@ -314,16 +320,17 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
         a.search = text.to_string();
     });
     wire!(ui, app, on_add_product, |a, w| {
+        let api = w.global::<EditorApi>();
         let (name, size, demand) = (
-            w.get_new_name().to_string(),
-            w.get_new_size().to_string(),
-            w.get_new_demand().to_string(),
+            api.get_new_name().to_string(),
+            api.get_new_size().to_string(),
+            api.get_new_demand().to_string(),
         );
         match a.state.add_product(&name, &size, &demand) {
             Ok(()) => {
-                w.set_new_name("".into());
-                w.set_new_size("".into());
-                w.set_new_demand("".into());
+                api.set_new_name("".into());
+                api.set_new_size("".into());
+                api.set_new_demand("".into());
             }
             Err(e) => a.state.status = e,
         }
