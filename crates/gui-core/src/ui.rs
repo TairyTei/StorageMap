@@ -7,8 +7,9 @@ use slint::{Color, ModelRc, SharedString, Timer, TimerMode, VecModel};
 use wh_core::{sample::demo_snapshot, ProductId, ShelfId, Snapshot};
 use wh_storage::json;
 
-use crate::editor::{EditorState, Tool, PRESETS};
+use crate::editor::{EditorState, PRESETS};
 use crate::scene::{self, point_in_poly, Scene};
+use crate::tools::tool::{Tool, ToolBehavior};
 use crate::viewport::Viewport;
 
 slint::include_modules!();
@@ -100,7 +101,9 @@ impl App {
     fn pan(&mut self, dx: f32, dy: f32) {
         let (dx64, dy64) = (dx as f64, dy as f64);
 
-        if (!self.state.drag(dx64, dy64)) {
+        let (wdx64, wdy64) = self.vp.delta_to_world(dx64, dy64);
+
+        if (!self.view3d && !self.state.drag(wdx64, wdy64)) {
             self.auto_fit = false;
             self.vp.pan_pixels(dx64, dy64);
         }
@@ -288,10 +291,10 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
             a.state.set_tool(Tool::from_index(i));
         }
     });
-    wire!(ui, app, on_preset_selected, |a, _w, i: i32| {
-        a.state.preset = (i.max(0) as usize).min(PRESETS.len() - 1);
-        a.state.status = format!("Типоразмер: {}", PRESETS[a.state.preset].name);
-    });
+    wire!(ui, app, on_preset_selected, |a, _w, i: i32| a
+        .state
+        .set_preset(i));
+
     wire!(ui, app, on_close_outline, |a, _w| a.state.close_outline());
     wire!(ui, app, on_undo_point, |a, _w| a.state.undo_point());
     wire!(ui, app, on_rotate_shelf, |a, _w| a.state.rotate());

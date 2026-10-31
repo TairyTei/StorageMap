@@ -1,5 +1,3 @@
-//! Преобразование между мировыми координатами (метры, Y вверх) и экраном (пиксели, Y вниз).
-
 use wh_core::Point;
 
 #[derive(Debug, Clone)]
@@ -36,6 +34,9 @@ impl Viewport {
             (self.size.1 * 0.5 - sy) / self.scale + self.center.y,
         )
     }
+    pub fn delta_to_world(&self, dx: f64, dy: f64) -> (f64, f64) {
+        (dx / self.scale, -dy / self.scale)
+    }
 
     pub fn fit(&mut self, min: Point, max: Point) {
         let margin = 40.0;
@@ -47,7 +48,6 @@ impl Viewport {
         self.center = Point::new((min.x + max.x) * 0.5, (min.y + max.y) * 0.5);
     }
 
-    /// Масштабирование относительно центра экрана.
     pub fn zoom(&mut self, factor: f64) {
         if !factor.is_finite() || factor <= 0.0 {
             return;
@@ -55,15 +55,12 @@ impl Viewport {
         self.scale = (self.scale * factor).clamp(MIN_SCALE, MAX_SCALE);
     }
 
-    /// Масштабирование относительно точки экрана `(sx, sy)`: мировая точка под
-    /// курсором/пальцем остаётся на месте.
     pub fn zoom_at(&mut self, factor: f64, sx: f64, sy: f64) {
         if !factor.is_finite() || factor <= 0.0 {
             return;
         }
         let anchor = self.to_world(sx, sy);
         self.scale = (self.scale * factor).clamp(MIN_SCALE, MAX_SCALE);
-        // Пересчитываем центр уже с фактическим (после clamp) масштабом.
         self.center = Point::new(
             anchor.x - (sx - self.size.0 * 0.5) / self.scale,
             anchor.y - (self.size.1 * 0.5 - sy) / self.scale,
