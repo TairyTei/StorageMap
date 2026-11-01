@@ -5,6 +5,9 @@ import { SectionTitle, ActionButton, InfoText } from "components/basic_component
 import { RenderCanvas } from "components/render_canvas.slint";
 import { EditorApi } from "globals.slint";
 
+export { PgConnectDialog } from "components/pg_connect_dialog.slint";
+export { PgConnectionData } from "components/pg_connect_dialog.slint";
+
 export { EditorApi, SceneData } from "globals.slint";
 
 export component MainWindow inherits Window {
@@ -63,183 +66,188 @@ export component MainWindow inherits Window {
         }
     }
 
-    HorizontalLayout {
-        if EditorApi.editor-mode: VerticalLayout {
-            width: 200px;
-            padding: 8px;
-            spacing: 6px;
-            alignment: start;
+    scope := FocusScope {
 
-            SectionTitle { text: "Инструменты"; }
-            FlexboxLayout {
-                spacing: 6px;
 
-                for t[i] in root.tools: CustomButton {
-                    icon: t.icon;
-                    width: 30px;
-                    height: 30px;
-                    base-color: t.base;
-                    accent-color: t.accent;
-                    primary: EditorApi.tool == i;
-                    clicked => { EditorApi.tool-selected(i) }
-                }
-            }
-
-            SectionTitle { text: "Контур"; }
-            CheckBox {
-                text: "Выравнивать линию";
-                checked <=> EditorApi.ortho;
-            }
-            ActionButton {
-                text: "Замкнуть контур";
-                clicked => { EditorApi.close-outline() }
-            }
-            ActionButton {
-                text: "Отменить точку";
-                clicked => { EditorApi.undo-point() }
-            }
-
-            SectionTitle { text: "Стеллаж"; }
-            ComboBox {
-                model: EditorApi.preset-names;
-                current-index: 0;
-                selected => { EditorApi.preset-selected(self.current-index) }
-            }
-            ActionButton {
-                text: "Повернуть на 90°";
-                clicked => { EditorApi.rotate-shelf() }
-            }
-            ActionButton {
-                text: "Две стороны вкл/выкл";
-                clicked => { EditorApi.toggle-double-sided() }
-            }
-            ActionButton {
-                text: "Удалить выбранный";
-                clicked => { EditorApi.delete-shelf() }
-            }
-
-            SectionTitle { text: "Расчёт"; }
-            CustomButton {
-                text: "Рассчитать доступность";
-                base-color: Palette.analyze;
-                clicked => { EditorApi.analyze-clicked() }
-            }
-            CustomButton {
-                text: "Расспределить товары";
-                base-color: Palette.place;
-                clicked => { EditorApi.place-clicked() }
-            }
-        }
-
-        VerticalLayout {
-            canvas := RenderCanvas {}
-
-            Rectangle {
-                background: Palette.bg.darker(2);
-
-                HorizontalLayout {
-                    padding: 4px;
-                    spacing: 4px;
-                    HorizontalLayout {
-                        InfoText {
-                            text: "out:";
-                            color: white.transparentize(0.4);
-                            font-weight: 700;
-                        }
-                        InfoText {
-                            text: EditorApi.status;
-                            color: Palette.accent;
-                        }
-                        Rectangle {}
-                    }
-                }
-            }
-        }
-
-        VerticalLayout {
-            width: 320px;
-            padding: 8px;
-            spacing: 6px;
-
-            InfoText {
-                text: EditorApi.shelf-info;
-                color: Palette.text;
-            }
-
-            SectionTitle { text: "Товары"; }
-            LineEdit {
-                placeholder-text: "Поиск по названию или SKU";
-                edited(t) => { EditorApi.search-edited(t) }
-            }
-            ListView {
-                vertical-stretch: 1;
-
-                for p[i] in EditorApi.products: Rectangle {
-                    height: 26px;
-                    background: p.selected ? Palette.row-selected : Palette.row;
-
-                    Text {
-                        x: 6px;
-                        width: parent.width - 12px;
-                        height: parent.height;
-                        vertical-alignment: center;
-                        overflow: elide;
-                        text: p.text;
-                        color: Palette.text;
-                        font-size: 12px;
-                    }
-                    TouchArea {
-                        clicked => { EditorApi.product-clicked(i) }
-                    }
-                }
-            }
-
+        HorizontalLayout {
             if EditorApi.editor-mode: VerticalLayout {
+                width: 200px;
+                padding: 8px;
                 spacing: 6px;
+                alignment: start;
 
-                SectionTitle {
-                    text: "Новый товар";
-                    vertical-stretch: 0;
-                    height: self.preferred-height;
-                }
-                LineEdit {
-                    placeholder-text: "Название";
-                    text <=> EditorApi.new-name;
-                    vertical-stretch: 0;
-                    height: 35px;
-                }
-                HorizontalLayout {
+                SectionTitle { text: "Инструменты"; }
+                FlexboxLayout {
                     spacing: 6px;
 
-                    LineEdit {
-                        placeholder-text: "Ячеек";
-                        text <=> EditorApi.new-size;
-                        horizontal-stretch: 1;
-                        height: 35px;
-                        min-width: 0px;
+                    for t[i] in root.tools: CustomButton {
+                        icon: t.icon;
+                        width: 30px;
+                        height: 30px;
+                        base-color: t.base;
+                        accent-color: t.accent;
+                        primary: EditorApi.tool == i;
+                        clicked => { EditorApi.tool-selected(i) }
                     }
-                    LineEdit {
-                        placeholder-text: "Спрос";
-                        text <=> EditorApi.new-demand;
-                        horizontal-stretch: 1;
-                        height: 35px;
-                        min-width: 0px;
-                    }
+                }
+
+                SectionTitle { text: "Контур"; }
+                CheckBox {
+                    text: "Выравнивать линию";
+                    checked <=> EditorApi.ortho;
                 }
                 ActionButton {
-                    text: "Добавить товар";
-                    clicked => { EditorApi.add-product() }
+                    text: "Замкнуть контур";
+                    clicked => { EditorApi.close-outline() }
                 }
-                HorizontalLayout {
+                ActionButton {
+                    text: "Отменить точку";
+                    clicked => { EditorApi.undo-point() }
+                }
+
+                SectionTitle { text: "Стеллаж"; }
+                ComboBox {
+                    model: EditorApi.preset-names;
+                    current-index: 0;
+                    selected => { EditorApi.preset-selected(self.current-index) }
+                }
+                ActionButton {
+                    text: "Повернуть на 90°";
+                    clicked => { EditorApi.rotate-shelf() }
+                }
+                ActionButton {
+                    text: "Две стороны вкл/выкл";
+                    clicked => { EditorApi.toggle-double-sided() }
+                }
+                ActionButton {
+                    text: "Удалить выбранный";
+                    clicked => { EditorApi.delete-shelf() }
+                }
+
+                SectionTitle { text: "Расчёт"; }
+                CustomButton {
+                    text: "Рассчитать доступность";
+                    base-color: Palette.analyze;
+                    clicked => { EditorApi.analyze-clicked() }
+                }
+                CustomButton {
+                    text: "Расспределить товары";
+                    base-color: Palette.place;
+                    clicked => { EditorApi.place-clicked() }
+                }
+            }
+
+            VerticalLayout {
+                canvas := RenderCanvas {}
+
+                Rectangle {
+                    background: Palette.bg.darker(2);
+
+                    HorizontalLayout {
+                        padding: 4px;
+                        spacing: 4px;
+                        HorizontalLayout {
+                            InfoText {
+                                text: "out:";
+                                color: white.transparentize(0.4);
+                                font-weight: 700;
+                            }
+                            Rectangle {width: 5px;}
+                            InfoText {
+                                text: EditorApi.status;
+                                color: Palette.accent;
+                            }
+                            Rectangle {}
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                width: 320px;
+                padding: 8px;
+                spacing: 6px;
+
+                InfoText {
+                    text: EditorApi.shelf-info;
+                    color: Palette.text;
+                }
+
+                SectionTitle { text: "Товары"; }
+                LineEdit {
+                    placeholder-text: "Поиск по названию или SKU";
+                    edited(t) => { EditorApi.search-edited(t) }
+                }
+                ListView {
+                    vertical-stretch: 1;
+
+                    for p[i] in EditorApi.products: Rectangle {
+                        height: 26px;
+                        background: p.selected ? Palette.row-selected : Palette.row;
+
+                        Text {
+                            x: 6px;
+                            width: parent.width - 12px;
+                            height: parent.height;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            text: p.text;
+                            color: Palette.text;
+                            font-size: 12px;
+                        }
+                        TouchArea {
+                            clicked => { EditorApi.product-clicked(i) }
+                        }
+                    }
+                }
+
+                if EditorApi.editor-mode: VerticalLayout {
                     spacing: 6px;
 
-                    ActionButton {
-                        text: "Закрепить";
-                        clicked => { EditorApi.pin-product() }
+                    SectionTitle {
+                        text: "Новый товар";
+                        vertical-stretch: 0;
+                        height: self.preferred-height;
+                    }
+                    LineEdit {
+                        placeholder-text: "Название";
+                        text <=> EditorApi.new-name;
+                        vertical-stretch: 0;
+                        height: 35px;
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+
+                        LineEdit {
+                            placeholder-text: "Ячеек";
+                            text <=> EditorApi.new-size;
+                            horizontal-stretch: 1;
+                            height: 35px;
+                            min-width: 0px;
+                        }
+                        LineEdit {
+                            placeholder-text: "Спрос";
+                            text <=> EditorApi.new-demand;
+                            horizontal-stretch: 1;
+                            height: 35px;
+                            min-width: 0px;
+                        }
                     }
                     ActionButton {
-                        text: "Открепить";
-                        clicked => { EditorApi.unpin-product() }
+                        text: "Добавить товар";
+                        clicked => { EditorApi.add-product() }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+
+                        ActionButton {
+                            text: "Закрепить";
+                            clicked => { EditorApi.pin-product() }
+                        }
+                        ActionButton {
+                            text: "Открепить";
+                            clicked => { EditorApi.unpin-product() }
+                        }
                     }
                 }
             }

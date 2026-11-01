@@ -1,0 +1,71 @@
+import { LineEdit, Button } from "std-widgets.slint";
+import { Palette } from "../palette.slint";
+import { CustomButton } from "custom_button.slint";
+import { ActionButton } from "basic_components.slint";
+
+export struct PgConnectionData {
+    host_value: string,
+    user_value: string,
+    password_value: string,
+    database_value: string,
+}
+
+export component PgConnectDialog inherits Window {
+    title: "PgConnection";
+    preferred-width: 560px;
+    preferred-height: 400px;
+    icon: @image-url("../assets/postgresql-icon.svg");
+
+    property <color> pg_color: #507594;
+
+    // min-width: 560px;
+    // min-height: 700px;
+    background: @linear-gradient(180deg, Palette.bg 0%, Palette.bg.darker(0.2) 100%);
+
+    in-out property <PgConnectionData> pg_connection_data;
+
+    callback accepted(PgConnectionData);
+    callback cancelled();
+
+    Rectangle {
+        background: pg_color.transparentize(0.7);
+        Rectangle {
+        opacity: 0.05;
+            Image {
+                height: parent.height;
+                x: -self.width / 2;
+                //y: -self.height / 2;
+                source: @image-url("../assets/postgresql-icon.svg");
+                image-fit: contain;
+                //colorize: #ffffff.transparentize(80%);
+            }
+        }
+        VerticalLayout {
+            padding: 8px;
+            spacing: 6px;
+
+            Text { text: "host"; }
+            LineEdit { text: root.pg_connection_data.host-value; edited(t) => { root.pg_connection_data.host-value = t; } }
+
+            Text { text: "user"; }
+            LineEdit { text: root.pg_connection_data.user-value; edited(t) => { root.pg_connection_data.user-value = t; } }
+
+            Text { text: "password"; }
+            LineEdit { text: root.pg_connection_data.password-value; edited(t) => { root.pg_connection_data.password-value = t; } }
+
+            Text { text: "database"; }
+            LineEdit { text: root.pg_connection_data.database-value; edited(t) => { root.pg_connection_data.database-value = t; } }
+
+            Rectangle {
+                        vertical-stretch: 1;
+                    }
+
+
+            HorizontalLayout {
+                spacing: 8px;
+                ActionButton { text: "OK"; clicked => { root.accepted(pg_connection_data); } }
+                ActionButton { text: "Отмена"; clicked => { root.cancelled(); } }
+            }
+        }
+    }
+}

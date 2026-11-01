@@ -9,6 +9,7 @@ use wh_storage::json;
 use wh_storage_postgres::{self, PostgresStorage};
 
 use crate::editor::{EditorState, PRESETS};
+use crate::pg_ui::pg_connect_prompt;
 use crate::scene::{self, point_in_poly, Scene};
 use crate::tools::tool::{Tool, ToolBehavior};
 use crate::viewport::Viewport;
@@ -164,14 +165,42 @@ impl App {
             None => format!("Theresno connection"),
         }
     }
-    fn connect_pg(&mut self, connection_string: &str) {
-        self.state.status = match PostgresStorage::connect(connection_string) {
-            Ok(pgstorage) => {
-                self.pgstorage = Some(pgstorage);
-                format!("connected")
+    fn connect_pg(app_rc: Rc<RefCell<Self>>, ui: &MainWindow) {
+        let app_clone = Rc::clone(&app_rc);
+        let ui_weak = ui.as_weak();
+
+        slint::spawn_local(async move {
+            let Some(pg_data) = pg_connect_prompt().await else {
+                return;
+            };
+
+            // if let Some(ui) = ui.upgrade() {
+
+            // }
+            let connection_string = format!(
+                "host={} user={} password={} dbname={}",
+                pg_data.host_value,
+                pg_data.user_value,
+                pg_data.password_value,
+                pg_data.database_value
+            );
+            let connection_result = PostgresStorage::connect(&connection_string);
+            if let Some(ui) = ui_weak.upgrade() {
+                let mut app = app_clone.borrow_mut();
+
+                app.state.status = match connection_result {
+                    Ok(pgstorage) => {
+                        app.pgstorage = Some(pgstorage);
+                        "connected".to_string()
+                    }
+                    Err(error) => {
+                        format!("{error}")
+                    }
+                };
+                app.push(&ui);
             }
-            Err(error) => format!("{error}"),
-        }
+        })
+        .unwrap();
     }
     fn replace_state(&mut self, snapshot: Snapshot) {
         let ortho = self.state.ortho;
@@ -386,9 +415,14 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
     //pg
     wire!(ui, app, on_save_project_pg, |a, _w| a.save_pg());
     wire!(ui, app, on_load_project_pg, |a, _w| a.load_pg());
-    wire!(ui, app, on_connect_pg, |a, _w| a.connect_pg(
-        "host=localhost user=postgres password=password dbname=warehouse"
-    ));
+
+    let app_for_connect = Rc::clone(&app);
+    wire!(
+        ui,
+        app_for_connect,
+        on_connect_pg,
+        |_a, _w| App::connect_pg(Rc::clone(&app_for_connect), _w)
+    );
 
     let timer = Timer::default();
     {
@@ -396,11 +430,12 @@ pub fn run(opts: StartOptions) -> Result<(), slint::PlatformError> {
         let weak = ui.as_weak();
         timer.start(TimerMode::Repeated, Duration::from_millis(120), move || {
             if let Some(ui) = weak.upgrade() {
-                let changed = app
-                    .borrow_mut()
-                    .set_size(ui.get_canvas_width() as f64, ui.get_canvas_height() as f64);
-                if changed {
-                    app.borrow_mut().push(&ui);
+                if let Ok(mut app_guard) = app.try_borrow_mut() {
+                    let changed = app_guard
+                        .set_size(ui.get_canvas_width() as f64, ui.get_canvas_height() as f64);
+                    if changed {
+                        app_guard.push(&ui);
+                    }
                 }
             }
         });
