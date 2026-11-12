@@ -630,7 +630,7 @@
         "footprint": {
           "center": {
             "x": 3.229723313734696,
-            "y": 31.565795349165246
+            "y": 31.56579534916525
           },
           "half_w": 1.5,
           "half_d": 0.5,
@@ -705,7 +705,7 @@
         "footprint": {
           "center": {
             "x": -5.828795863475949,
-            "y": 31.545277584318626
+            "y": 31.545277584318622
           },
           "half_w": 1.5,
           "half_d": 0.5,
@@ -818,6 +818,96 @@
         },
         "double_sided": false,
         "capacity": 6
+      },
+      {
+        "id": 37,
+        "label": "S37",
+        "footprint": {
+          "center": {
+            "x": 8.423878613680875,
+            "y": 18.671409656874516
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 38,
+        "label": "S38",
+        "footprint": {
+          "center": {
+            "x": 4.5590275577901025,
+            "y": 26.71219706549421
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 0.0
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 39,
+        "label": "S39",
+        "footprint": {
+          "center": {
+            "x": -3.0,
+            "y": 10.9
+          },
+          "half_w": 1.5,
+          "half_d": 0.5,
+          "angle": 4.71238898038469
+        },
+        "double_sided": false,
+        "capacity": 6
+      },
+      {
+        "id": 40,
+        "label": "S40",
+        "footprint": {
+          "center": {
+            "x": -1.7794998249395513,
+            "y": 20.126356459128413
+          },
+          "half_w": 0.6,
+          "half_d": 0.25,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 2
+      },
+      {
+        "id": 41,
+        "label": "S41",
+        "footprint": {
+          "center": {
+            "x": -2.565914270431842,
+            "y": 18.486414445492304
+          },
+          "half_w": 0.6,
+          "half_d": 0.25,
+          "angle": 0.0
+        },
+        "double_sided": false,
+        "capacity": 2
+      },
+      {
+        "id": 42,
+        "label": "S42",
+        "footprint": {
+          "center": {
+            "x": -1.759481682864871,
+            "y": 21.632837071986987
+          },
+          "half_w": 0.6,
+          "half_d": 0.25,
+          "angle": 1.5707963267948966
+        },
+        "double_sided": false,
+        "capacity": 2
       }
     ]
   },

@@ -33,7 +33,6 @@ impl Navigator {
         self.nodes.len()
     }
 
-    /// Свободен ли прямой отрезок `a→b`.
     pub fn visible(&self, a: Point, b: Point) -> bool {
         if a.distance(b) < EPS {
             return true;
@@ -63,8 +62,6 @@ impl Navigator {
         adj
     }
 
-    /// Дейкстра от `start` до всех вершин графа. Результат переиспользуется для
-    /// любого количества целей.
     pub fn routes_from(&self, start: Point) -> RouteField<'_> {
         let n = self.nodes.len();
         let mut dist = vec![f64::INFINITY; n];
@@ -108,7 +105,6 @@ pub struct RouteField<'a> {
 }
 
 impl RouteField<'_> {
-    /// Кратчайший маршрут до произвольной точки. `None` — точка недостижима.
     pub fn route_to(&self, target: Point) -> Option<Route> {
         if self.nav.visible(self.start, target) {
             return Some(Route {
@@ -143,12 +139,9 @@ impl RouteField<'_> {
     }
 }
 
-// ───────────────────── internals ─────────────────────
-
 fn build_nodes(outline: &Polygon, obstacles: &[OrientedRect], clearance: f64) -> Vec<Point> {
     let mut raw: Vec<Point> = obstacles.iter().flat_map(|o| o.corners()).collect();
 
-    // Вогнутые вершины контура: путь огибает их с отступом внутрь помещения.
     let pts = &outline.points;
     let n = pts.len();
     let ccw = outline.is_ccw();
@@ -167,7 +160,6 @@ fn build_nodes(outline: &Polygon, obstacles: &[OrientedRect], clearance: f64) ->
         let Some(bisector) = (u1 + u2).normalized() else {
             continue;
         };
-        // Угол между рёбрами < 180° лежит вне помещения; внутрь — против биссектрисы.
         let sin_half = ((1.0 - u1.dot(u2)) * 0.5).max(0.0).sqrt();
         let shift = (clearance / sin_half.max(0.25)).min(clearance * 4.0);
         raw.push(v - bisector * shift);
@@ -192,7 +184,6 @@ struct State {
 }
 impl Eq for State {}
 impl Ord for State {
-    // Обратный порядок: BinaryHeap — max-heap, нужен min по стоимости.
     fn cmp(&self, other: &Self) -> Ordering {
         other
             .cost
@@ -236,7 +227,6 @@ mod tests {
 
     #[test]
     fn wall_forces_detour() {
-        // Вертикальная перегородка x∈[4.5,5.5], y∈[1,9] в комнате 10×10.
         let wall = OrientedRect::new(Point::new(5.0, 5.0), 1.0, 8.0, 0.0);
         let nav = Navigator::new(square(10.0), vec![wall], 0.0);
         let r = nav
@@ -271,7 +261,6 @@ mod tests {
 
     #[test]
     fn enclosed_target_is_unreachable() {
-        // Цель лежит внутри препятствия: ни одна вершина графа её «не видит».
         let top = OrientedRect::new(Point::new(5.0, 6.0), 4.0, 1.0, 0.0);
         let bottom = OrientedRect::new(Point::new(5.0, 4.0), 4.0, 1.0, 0.0);
         let nav = Navigator::new(square(10.0), vec![top, bottom], 0.0);

@@ -35,13 +35,13 @@ export component MainWindow inherits Window {
 
             MenuItem {
                 title: @tr("Новый");
-                shortcut: @keys(Control + N);
+                //shortcut: @keys(Control + N);
                 activated => { EditorApi.new-project() }
             }
             MenuSeparator {}
             MenuItem {
                 title: @tr("Открыть...");
-                shortcut: @keys(Control + O);
+                //shortcut: @keys(Control + O);
                 activated => { EditorApi.load-project() }
             }
             MenuItem {
@@ -51,12 +51,12 @@ export component MainWindow inherits Window {
             MenuSeparator {}
             MenuItem {
                 title: @tr("Подключиться к postgres");
-                shortcut: @keys(Control + O);
+                //shortcut: @keys(Control + O);
                 activated => { EditorApi.connect_pg() }
             }
             MenuItem {
                 title: @tr("Загрузить с postgres...");
-                shortcut: @keys(Control + O);
+                //shortcut: @keys(Control + O);
                 activated => { EditorApi.load_project_pg() }
             }
             MenuItem {

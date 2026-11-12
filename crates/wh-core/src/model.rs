@@ -18,12 +18,9 @@ macro_rules! id_type {
     };
 }
 
-id_type!(/// Идентификатор склада / торгового зала.
-    WarehouseId);
-id_type!(/// Идентификатор стеллажа.
-    ShelfId);
-id_type!(/// Идентификатор товара.
-    ProductId);
+id_type!(WarehouseId);
+id_type!(ShelfId);
+id_type!(ProductId);
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

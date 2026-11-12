@@ -1,5 +1,3 @@
-//! Оценка доступности стеллажей по длине маршрута от входа.
-
 use wh_core::geometry::OrientedRect;
 use wh_core::model::{ShelfAccess, ShelfId, Warehouse};
 
